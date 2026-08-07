@@ -223,13 +223,15 @@ model User {
 
   uploadedMedia Media[]
 
-  userRoles UserRole[]
+  userRoles UserRole[] @relation("UserRoles")
 
-  userPermissions UserPermission[]
+  userPermissions UserPermission[] @relation("UserPermissions")
 
   createdSeasons Season[]
 
   createdTournaments Tournament[]
+
+  createdTeams Team[]
 
   reviewedRegistrations TournamentRegistration[]
 
@@ -252,6 +254,12 @@ model User {
   notifications Notification[]
 
   activityLogs ActivityLog[]
+
+  assignedRolePermissions RolePermission[] @relation("AssignedRolePermissions")
+
+  assignedUserRoles UserRole[] @relation("AssignedUserRoles")
+
+  assignedUserPermissions UserPermission[] @relation("AssignedUserPermissions")
 
   @@index([status])
 
@@ -402,11 +410,13 @@ model UserRole {
 
   // Relations
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation("UserRoles", fields: [userId], references: [id], onDelete: Cascade)
 
   role Role @relation(fields: [roleId], references: [id], onDelete: Restrict)
 
-  assignedBy User?
+  assignedBy User? @relation("AssignedUserRoles", fields: [assignedById], references: [id], onDelete: SetNull)
+
+  
 
   @@id([userId, roleId])
 
@@ -432,7 +442,7 @@ model RolePermission {
 
   permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
 
-  assignedBy User?
+  assignedBy User? @relation("AssignedRolePermissions", fields: [assignedById], references: [id], onDelete: SetNull)
 
   @@id([roleId, permissionId])
 
@@ -456,11 +466,11 @@ model UserPermission {
 
   // Relations
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation("UserPermissions", fields: [userId], references: [id], onDelete: Cascade)
 
   permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
 
-  assignedBy User?
+  assignedBy User? @relation("AssignedUserPermissions", fields: [assignedById], references: [id], onDelete: SetNull)
 
   @@id([userId, permissionId])
 
