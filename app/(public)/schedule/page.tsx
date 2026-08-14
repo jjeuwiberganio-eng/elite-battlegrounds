@@ -4,12 +4,11 @@ import {
   getTournamentControl,
   getGroupStageSchedule,
   getPlayoffBracket,
+  getUpcomingPlayoffMatches,
 } from "@/actions/schedule";
 
 import ScheduleHeroSection from "@/components/schedule/hero/ScheduleHeroSection";
-import ScheduleTabs from "@/components/schedule/navigation/ScheduleTabs";
-import GroupStageSection from "@/components/schedule/group-stage/GroupStageSection";
-import PlayoffBracketSection from "@/components/schedule/playoffs/PlayoffBracketSection";
+import ScheduleContent from "@/components/schedule/ScheduleContent";
 
 export const metadata: Metadata = {
   title: "Schedule",
@@ -24,30 +23,26 @@ export default async function SchedulePage() {
     tournament,
     groupStage,
     playoffBracket,
+    playoffMatches,
   ] = await Promise.all([
     getTournamentControl(),
     getGroupStageSchedule(),
     getPlayoffBracket(),
+    getUpcomingPlayoffMatches(),
   ]);
 
-  return (
-    <>
-      <ScheduleHeroSection
-        tournament={tournament}
-      />
+return (
+ <div style={{ paddingTop: "110px" }}>
 
-      <ScheduleTabs
-        defaultTab="group-stage"
-      />
+    <ScheduleHeroSection
+      tournament={tournament}
+    />
 
-      <GroupStageSection
-        days={groupStage.days}
-      />
-
-      <PlayoffBracketSection
-        bracket={playoffBracket}
-        playoffSize={tournament.playoffSize}
-      />
-    </>
-  );
+    <ScheduleContent
+      groupStage={groupStage}
+      playoffBracket={playoffBracket}
+      playoffMatches={playoffMatches}
+    />
+  </div>
+);
 }

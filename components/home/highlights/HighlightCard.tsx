@@ -23,31 +23,15 @@ export default function HighlightCard({
   highlight,
 }: Readonly<HighlightCardProps>) {
   return (
-    <article
-      className="
-        group
-        overflow-hidden
-        rounded-3xl
-        border
-        border-white/10
-        bg-white/[0.05]
-        backdrop-blur-xl
-        transition-all
-        duration-300
-        hover:-translate-y-2
-        hover:border-amber-500/40
-        hover:shadow-2xl
-      "
-    >
+<article className="group relative min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-950">
       {/* Media */}
-
-      <div className="relative aspect-video overflow-hidden">
+      <div className="relative aspect-[3/4] overflow-hidden rounded-xl">
 
         <Image
           src={highlight.mediaUrl}
           alt={highlight.title}
           fill
-          sizes="(max-width:768px)100vw,(max-width:1280px)50vw,33vw"
+          sizes="(max-width: 768px) 33vw, 25vw"
           className="
             object-cover
             transition-transform
@@ -56,8 +40,21 @@ export default function HighlightCard({
           "
         />
 
-        {/* Video Badge */}
+        {/* Dark gradient */}
+        <div
+          className="
+            absolute
+            inset-x-0
+            bottom-0
+            h-32
+            bg-gradient-to-t
+            from-slate-950
+            via-slate-950/70
+            to-transparent
+          "
+        />
 
+        {/* Video Play Button */}
         {highlight.mediaType === "video" && (
           <div
             className="
@@ -66,88 +63,99 @@ export default function HighlightCard({
               flex
               items-center
               justify-center
-              bg-black/30
             "
           >
             <div
               className="
+                flex
+                h-14
+                w-14
+                items-center
+                justify-center
                 rounded-full
-                bg-white/90
-                p-4
+                border-2
+                border-white
+                bg-slate-950/50
+                text-white
                 shadow-xl
+                backdrop-blur-sm
+                transition-all
+                duration-300
+                group-hover:scale-110
+                group-hover:bg-amber-400
+                group-hover:text-slate-950
               "
             >
-              <PlayCircle className="h-10 w-10 text-red-600" />
+              <PlayCircle className="h-7 w-7" />
             </div>
           </div>
         )}
 
-        {/* Featured Badge */}
-
+        {/* Featured */}
         {highlight.featured && (
           <div
             className="
               absolute
-              left-4
-              top-4
+              left-3
+              top-3
               inline-flex
               items-center
-              gap-2
+              gap-1.5
               rounded-full
-              bg-amber-500
-              px-3
-              py-1.5
-              text-xs
-              font-bold
+              bg-amber-400
+              px-2.5
+              py-1
+              text-[10px]
+              font-black
               uppercase
               tracking-wide
               text-slate-950
             "
           >
-            <Star className="h-4 w-4" />
-
+            <Star className="h-3 w-3" />
             Featured
           </div>
         )}
 
-      </div>
+        {/* Bottom Content */}
+        <div className="absolute inset-x-0 bottom-0 p-3 sm:p-4">
 
-      {/* Content */}
+          <h3
+            className="
+              text-sm
+              font-black
+              uppercase
+              leading-tight
+              text-white
+              sm:text-base
+            "
+          >
+            {highlight.title}
+          </h3>
 
-      <div className="p-6">
+          {highlight.mediaType === "video" && (
+            <div className="mt-1 text-[10px] font-bold uppercase tracking-wide text-amber-400">
+              Short Video
+            </div>
+          )}
 
-        <div className="flex items-center gap-2 text-sm text-slate-400">
-
-          <CalendarDays className="h-4 w-4" />
-
-          {new Date(
-            highlight.publishedAt,
-          ).toLocaleDateString()}
         </div>
-
-        <h3 className="mt-4 text-2xl font-bold text-white transition-colors duration-300 group-hover:text-amber-400">
-          {highlight.title}
-        </h3>
-
-        <p className="mt-4 line-clamp-3 leading-7 text-slate-400">
-          {highlight.description}
-        </p>
-
       </div>
 
-      {/* Bottom Accent */}
-
+      {/* Hover Accent */}
       <div
         className="
+          absolute
+          bottom-0
+          left-0
           h-1
           w-0
-          bg-amber-500
+          bg-amber-400
           transition-all
           duration-300
           group-hover:w-full
         "
       />
-
     </article>
   );
 }

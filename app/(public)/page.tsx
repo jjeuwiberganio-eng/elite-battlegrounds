@@ -2,12 +2,11 @@ import type { Metadata } from "next";
 
 import {
   getHomepageData,
-  getFeaturedMatch,
-  getUpcomingMatch,
   getHomepageHighlights,
   getHomepageRules,
-  getLiveStatus,
 } from "@/actions/home";
+import { getGroupStageMatches } from "@/actions/group-stage";
+import { getPublicRegistrationSettings } from "@/actions/registration";
 
 import HeroSection from "@/components/home/hero/HeroSection";
 import TournamentFeatures from "@/components/home/features/TournamentFeatures";
@@ -22,63 +21,117 @@ export const metadata: Metadata = {
     "Official Elite Battlegrounds Series tournament website featuring schedules, standings, livestreams, playoffs, highlights, and tournament updates.",
 };
 
-export const revalidate = 60;
+export const revalidate = 30;
 
 export default async function HomePage() {
   const [
     homepage,
-    featuredMatch,
-    upcomingMatch,
     highlights,
     rules,
-    liveStatus,
+    groupStageMatches,
+    registration,
   ] = await Promise.all([
     getHomepageData(),
-    getFeaturedMatch(),
-    getUpcomingMatch(),
     getHomepageHighlights(),
     getHomepageRules(),
-    getLiveStatus(),
+    getGroupStageMatches(),
+    getPublicRegistrationSettings(),
   ]);
+
+    const heroTournament = {
+      ...homepage.tournament,
+      registrationOpen: registration.registrationOpen,
+      registrationUrl:
+        registration.registrationUrl ?? undefined,
+    };
 
   return (
     <>
-          {/* Hero */}
+      {/* Hero */}
       <HeroSection
         hero={homepage.hero}
-        tournament={homepage.tournament}
-        featuredMatch={featuredMatch}
-        liveStatus={liveStatus}
+        tournament={heroTournament}
       />
 
       {/* Tournament Features */}
       <TournamentFeatures
-        features={homepage.features}
+        features={[
+          {
+            id: "team-up",
+            title: "Team Up",
+            description: "Build your team and compete together.",
+            icon: "community",
+          },
+          {
+            id: "friendly",
+            title: "Friendly",
+            description: "A welcoming tournament experience for everyone.",
+            icon: "trophy",
+          },
+          {
+            id: "organized",
+            title: "Organized",
+            description: "Clear schedules and organized matches.",
+            icon: "calendar",
+          },
+          {
+            id: "fair-play",
+            title: "Fair Play",
+            description: "Competitive matches built around fair play.",
+            icon: "playoffs",
+          },
+          {
+            id: "livestream",
+            title: "Live",
+            description: "Follow the action through livestream coverage.",
+            icon: "livestream",
+          },
+          {
+            id: "standings",
+            title: "Standings",
+            description: "Keep track of tournament standings and progress.",
+            icon: "standings",
+          },
+        ]}
       />
 
       {/* Upcoming Match */}
-      <UpcomingMatchSection
-        match={upcomingMatch}
-        countdown={upcomingMatch?.countdown}
-        isLive={liveStatus.isLive}
-      />
-            {/* Highlights */}
+      <UpcomingMatchSection matches={groupStageMatches} />
+
+      {/* Highlights */}
       <HighlightsSection
-        posters={highlights.posters}
-        videos={highlights.videos}
+        posters={highlights
+          .filter((item) => item.type === "poster")
+          .map((item) => ({
+            id: item.id,
+            title: item.title,
+            description: item.title,
+            mediaUrl: item.image,
+            mediaType: "image" as const,
+            featured: false,
+            publishedAt: new Date().toISOString(),
+          }))}
+        videos={highlights
+          .filter((item) => item.type === "video")
+          .map((item) => ({
+            id: item.id,
+            title: item.title,
+            description: item.title,
+            mediaUrl: item.image,
+            mediaType: "video" as const,
+            featured: false,
+            publishedAt: new Date().toISOString(),
+          }))}
       />
 
-      {/* Tournament Rules Preview */}
-      <RulesPreviewSection
-        rules={rules}
-      />
+      {/* Tournament Rules */}
+      <RulesPreviewSection rules={rules} />
 
       {/* Facebook Community */}
       <FacebookCTASection
-        facebookUrl={homepage.socials.facebook}
-        communityName={homepage.community.name}
-        communityDescription={homepage.community.description}
-      />
-      </>
+      communityName={homepage.community.name}
+      communityDescription={homepage.community.description}
+    />
+    </>
   );
 }

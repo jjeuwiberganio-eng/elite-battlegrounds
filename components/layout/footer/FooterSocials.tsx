@@ -1,11 +1,9 @@
 import Link from "next/link";
 
 import {
-  Facebook,
-  Youtube,
-  Instagram,
-  MessageCircle,
+  ExternalLink,
   Globe,
+  MessageCircle,
   Music2,
 } from "lucide-react";
 
@@ -16,6 +14,7 @@ interface SocialLinks {
   youtube?: string;
   tiktok?: string;
   instagram?: string;
+  website?: string;
 }
 
 interface FooterSocialsProps {
@@ -25,26 +24,21 @@ interface FooterSocialsProps {
 export default function FooterSocials({
   socials,
 }: Readonly<FooterSocialsProps>) {
-  const links = [
+  const socialItems = [
     {
       label: "Facebook",
       href: socials.facebook,
-      icon: Facebook,
+      icon: ExternalLink,
     },
     {
       label: "Facebook Group",
       href: socials.facebookGroup,
-      icon: Globe,
-    },
-    {
-      label: "Discord",
-      href: socials.discord,
-      icon: MessageCircle,
+      icon: ExternalLink,
     },
     {
       label: "YouTube",
       href: socials.youtube,
-      icon: Youtube,
+      icon: ExternalLink,
     },
     {
       label: "TikTok",
@@ -52,16 +46,20 @@ export default function FooterSocials({
       icon: Music2,
     },
     {
-      label: "Instagram",
-      href: socials.instagram,
-      icon: Instagram,
+      label: "Discord",
+      href: socials.discord,
+      icon: MessageCircle,
+    },
+    {
+      label: "Website",
+      href: socials.website,
+      icon: Globe,
     },
   ].filter((item) => Boolean(item.href));
 
   return (
-    <div className="flex flex-wrap gap-3">
-
-      {links.map((item) => {
+    <div className="flex items-center gap-3">
+      {socialItems.map((item) => {
         const Icon = item.icon;
 
         return (
@@ -77,7 +75,6 @@ export default function FooterSocials({
           </Link>
         );
       })}
-
     </div>
   );
 }

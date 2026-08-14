@@ -1,3 +1,4 @@
+import Link from "next/link";
 import HighlightCard from "./HighlightCard";
 
 interface HighlightItem {
@@ -19,70 +20,92 @@ export default function HighlightsSection({
   posters,
   videos,
 }: Readonly<HighlightsSectionProps>) {
-  const items = [...posters, ...videos]
-    .sort((a, b) =>
-      new Date(b.publishedAt).getTime() -
-      new Date(a.publishedAt).getTime(),
-    )
-    .slice(0, 6);
+  const posterItems = posters.slice(0, 3);
+  const videoItems = videos.slice(0, 3);
 
   return (
-    <section className="bg-slate-950 py-20">
+    <section className="bg-white py-10">
+      <div className="w-full px-8">
 
-      <div className="container">
+        {/* Heading */}
+        <div className="mb-4 flex items-center gap-4">
+          <div className="h-px flex-1 bg-amber-500" />
 
-        <div className="mb-14 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <h2 className="whitespace-nowrap text-3xl font-black uppercase text-slate-950">
+            Highlights
+          </h2>
 
-          <div>
+          <div className="h-px flex-1 bg-amber-500" />
+        </div>
 
-            <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-4 py-2 text-sm font-semibold uppercase tracking-wider text-amber-400">
-              Highlights
-            </span>
+        <div className="grid grid-cols-6 gap-4">
 
-            <h2 className="mt-5 text-4xl font-black text-white md:text-5xl">
-              Tournament
-              <br />
-              Highlights
-            </h2>
+          {/* Posters */}
+          <div className="col-span-3 min-w-0">
+            <div className="mb-2 flex items-center justify-between">
+              <h3 className="text-sm font-black uppercase text-slate-950">
+                Posters
+              </h3>
 
-            <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-400">
-              Catch up on featured posters, exciting match moments,
-              tournament announcements, and community highlights from
-              Elite Battlegrounds Series.
-            </p>
+              <Link
+                href="/highlights"
+                className="
+                  text-xs
+                  font-bold
+                  uppercase
+                  text-slate-900
+                  transition-colors
+                  hover:text-amber-600
+                "
+              >
+                View All Posters →
+              </Link>
+            </div>
 
+            <div className="grid grid-cols-3 gap-4">
+              {posterItems.map((item) => (
+                <HighlightCard
+                  key={item.id}
+                  highlight={item}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Short Videos */}
+          <div className="col-span-3 min-w-0">
+            <div className="mb-2 flex items-center justify-between">
+              <h3 className="text-sm font-black uppercase text-slate-950">
+                Short Videos
+              </h3>
+
+              <Link
+                href="/highlights"
+                className="
+                  text-xs
+                  font-bold
+                  uppercase
+                  text-slate-900
+                  transition-colors
+                  hover:text-amber-600
+                "
+              >
+                View All Short Videos →
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              {videoItems.map((item) => (
+                <HighlightCard
+                  key={item.id}
+                  highlight={item}
+                />
+              ))}
+            </div>
           </div>
 
         </div>
-
-        {items.length > 0 ? (
-          <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-3">
-
-            {items.map((item) => (
-              <HighlightCard
-                key={item.id}
-                highlight={item}
-              />
-            ))}
-
-          </div>
-        ) : (
-          <div className="rounded-3xl border border-dashed border-slate-700 py-20 text-center">
-
-            <h3 className="text-2xl font-bold text-white">
-              No Highlights Yet
-            </h3>
-
-            <p className="mt-4 text-slate-400">
-              Tournament highlights will appear here after
-              they're published by the administrators.
-            </p>
-
-          </div>
-        )}
-
       </div>
-
     </section>
   );
 }

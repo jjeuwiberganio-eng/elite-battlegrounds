@@ -1,13 +1,9 @@
 import {
-  Trophy,
-  CalendarDays,
-  BarChart3,
-  Radio,
-  Swords,
   Users,
+  HeartHandshake,
+  Trophy,
+  ShieldCheck,
 } from "lucide-react";
-
-import FeatureCard from "./FeatureCard";
 
 interface Feature {
   id: string;
@@ -26,63 +22,162 @@ interface TournamentFeaturesProps {
   features: Feature[];
 }
 
-const iconMap = {
-  trophy: Trophy,
-  calendar: CalendarDays,
-  standings: BarChart3,
-  livestream: Radio,
-  playoffs: Swords,
-  community: Users,
-};
+const fallbackFeatures = [
+  {
+    id: "team-up",
+    title: "Team Up",
+    description: "And compete",
+    icon: Users,
+  },
+  {
+    id: "friendly",
+    title: "Friendly",
+    description: "But competitive",
+    icon: HeartHandshake,
+  },
+  {
+    id: "prize-pool",
+    title: "Exciting Prize Pool",
+    description: "Organized matches and exciting competition.",
+    icon: Trophy,
+  },
+  {
+    id: "fair-play",
+    title: "Fair Play",
+    description: "Respect all",
+    icon: ShieldCheck,
+  },
+  {
+    id: "champions",
+    title: "Prize Pool",
+    description: "Awaiting the champions!",
+    icon: Trophy,
+  },
+];
 
 export default function TournamentFeatures({
   features,
 }: Readonly<TournamentFeaturesProps>) {
+  const displayFeatures = fallbackFeatures.map(
+    (fallback, index) => ({
+      ...fallback,
+      source: features[index],
+    }),
+  );
+
   return (
-    <section className="bg-slate-950 py-20">
+    <section className="relative z-20 bg-white">
+      <div className="w-full px-0">
+        <div
+          className="
+            -mt-1
+            overflow-hidden
+            rounded-2xl
+            border
+            border-slate-200
+            bg-white
+            shadow-[0_10px_35px_rgba(15,23,42,0.08)]
+          "
+        >
+          <div
+            className="
+              grid
+              grid-cols-1
+              sm:grid-cols-2
+              lg:grid-cols-5
+            "
+          >
+            {displayFeatures.map(
+              ({ id, title, description, icon: Icon }, index) => (
+                <article
+                  key={id}
+                  className="
+                    relative
+                    flex
+                    min-h-[130px]
+                    items-center
+                    gap-4
+                    px-5
+                    py-5
+                    sm:px-6
+                    lg:min-h-[145px]
+                    lg:flex-col
+                    lg:justify-center
+                    lg:gap-2
+                    lg:px-4
+                    lg:text-center
+                  "
+                >
+                  {index > 0 && (
+                    <span
+                      className="
+                        absolute
+                        left-0
+                        top-1/2
+                        hidden
+                        h-16
+                        w-px
+                        -translate-y-1/2
+                        bg-amber-400/60
+                        lg:block
+                      "
+                    />
+                  )}
 
-      <div className="container">
+                  <div
+                    className="
+                      flex
+                      h-11
+                      w-11
+                      shrink-0
+                      items-center
+                      justify-center
+                      rounded-full
+                      bg-amber-50
+                      text-amber-600
+                      ring-1
+                      ring-amber-200
+                    "
+                  >
+                    <Icon
+                      className="h-5 w-5"
+                      strokeWidth={2}
+                    />
+                  </div>
 
-        <div className="mx-auto mb-14 max-w-3xl text-center">
+                  <div className="min-w-0">
+                    <h3
+                      className="
+                        text-sm
+                        font-black
+                        uppercase
+                        tracking-wide
+                        text-slate-950
+                      "
+                    >
+                      {title}
+                    </h3>
 
-          <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-4 py-2 text-sm font-semibold uppercase tracking-wider text-amber-400">
-            Tournament Features
-          </span>
-
-          <h2 className="mt-6 text-4xl font-black text-white md:text-5xl">
-            Everything You Need
-            <br />
-            In One Tournament
-          </h2>
-
-          <p className="mt-6 text-lg leading-8 text-slate-400">
-            Elite Battlegrounds Series delivers a complete community
-            tournament experience with organized schedules, automatic
-            standings, livestream coverage, and competitive playoffs.
-          </p>
-
+                    <p
+                      className="
+                        mt-1
+                        text-xs
+                        font-semibold
+                        uppercase
+                        leading-5
+                        text-slate-500
+                        lg:max-w-[170px]
+                      "
+                    >
+                      {description}
+                    </p>
+                  </div>
+                </article>
+              ),
+            )}
+          </div>
         </div>
-
-        <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-
-          {features.map((feature) => {
-            const Icon =
-              iconMap[feature.icon] ?? Trophy;
-
-            return (
-              <FeatureCard
-                key={feature.id}
-                title={feature.title}
-                description={feature.description}
-                icon={<Icon className="h-8 w-8" />}
-              />
-            );
-          })}
-
-        </div>
-
       </div>
-
     </section>
   );
 }

@@ -12,22 +12,21 @@ export default function FeatureCard({
   icon,
 }: Readonly<FeatureCardProps>) {
   return (
-    <article
+   <article
       className="
         group
         relative
         overflow-hidden
         rounded-3xl
         border
-        border-white/10
-        bg-white/[0.04]
+        border-slate-200
+        bg-white
         p-8
+        shadow-md
         transition-all
         duration-300
         hover:-translate-y-1
-        hover:border-amber-500/40
-        hover:bg-white/[0.06]
-        hover:shadow-2xl
+        hover:shadow-xl
       "
     >
       {/* Glow Effect */}
@@ -39,7 +38,7 @@ export default function FeatureCard({
           h-40
           w-40
           rounded-full
-          bg-amber-500/10
+          bg-amber-50
           blur-3xl
           transition-opacity
           duration-300
@@ -58,7 +57,7 @@ export default function FeatureCard({
           items-center
           justify-center
           rounded-2xl
-          bg-amber-500/10
+          bg-amber-100
           text-amber-400
           transition-all
           duration-300
@@ -70,12 +69,12 @@ export default function FeatureCard({
       </div>
 
       {/* Title */}
-      <h3 className="relative z-10 mt-8 text-2xl font-bold text-white">
+      <h3 className="relative z-10 mt-8 text-2xl font-bold text-slate-900">
         {title}
       </h3>
 
       {/* Description */}
-      <p className="relative z-10 mt-4 leading-7 text-slate-400">
+      <p className="relative z-10 mt-4 leading-7 text-slate-600">
         {description}
       </p>
 

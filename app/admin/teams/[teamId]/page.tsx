@@ -1,12 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import {
-  getTeamById,
-} from "@/actions/teams";
+import { getTeamById } from "@/actions/teams";
 
 import TeamForm from "@/components/admin/teams/TeamForm";
-import PageHeader from "@/components/admin/shared/PageHeader";
 
 export const metadata: Metadata = {
   title: "Edit Team",
@@ -30,35 +27,58 @@ export default async function EditTeamPage({
   }
 
   return (
-    <div className="space-y-8">
+    <main className="space-y-6">
+      {/* Page Header */}
 
-      <PageHeader
-        title="Edit Team"
-        description="Update an existing tournament team."
-        breadcrumbs={[
-          {
-            label: "Dashboard",
-            href: "/admin",
-          },
-          {
-            label: "Teams",
-            href: "/admin/teams",
-          },
-          {
-            label: team.name,
-          },
-        ]}
-      />
+      <div>
+        <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500">
+          <a
+            href="/admin"
+            className="transition hover:text-amber-400"
+          >
+            Dashboard
+          </a>
 
-      <div className="rounded-2xl bg-white p-8 shadow-sm">
+          <span>/</span>
 
+          <a
+            href="/admin/teams"
+            className="transition hover:text-amber-400"
+          >
+            Teams
+          </a>
+
+          <span>/</span>
+
+          <span className="text-slate-300">
+            {team.name}
+          </span>
+        </div>
+
+        <div className="mt-4">
+          <p className="text-xs font-black uppercase tracking-[0.3em] text-amber-400">
+            Super Admin
+          </p>
+
+          <h1 className="mt-2 text-3xl font-black text-white">
+            Edit Team
+          </h1>
+
+          <p className="mt-2 text-sm text-slate-400">
+            Update the team's information, group,
+            poster, logo, and roster.
+          </p>
+        </div>
+      </div>
+
+      {/* Team Form */}
+
+      <div className="rounded-3xl border border-white/10 bg-slate-950 p-6 shadow-2xl md:p-8">
         <TeamForm
           mode="edit"
           team={team}
         />
-
       </div>
-
-    </div>
+    </main>
   );
 }

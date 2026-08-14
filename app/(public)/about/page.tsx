@@ -54,11 +54,10 @@ export default async function AboutPage() {
         disclaimer={about.disclaimer}
       />
 
-      <FacebookCTASection
-        facebookUrl={about.socials.facebook}
-        communityName={about.community.name}
-        communityDescription={about.community.description}
-      />
+    <FacebookCTASection
+      communityName={homepage.community.name}
+      communityDescription={homepage.community.description}
+    />
     </>
   );
 }

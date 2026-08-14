@@ -25,7 +25,7 @@ export default function FeaturedMatchCard({
       <div className="rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
         <div className="flex h-72 items-center justify-center">
 
-          <p className="text-center text-slate-300">
+          <p className="text-center text-slate-600">
             No featured match has been scheduled yet.
           </p>
 
@@ -40,7 +40,7 @@ export default function FeaturedMatchCard({
       {/* Header */}
       <div className="flex items-center justify-between">
 
-        <h2 className="text-lg font-bold text-white">
+        <h2 className="text-lg font-bold text-slate-900">
           Featured Match
         </h2>
 
@@ -62,7 +62,7 @@ export default function FeaturedMatchCard({
             size="xl"
           />
 
-          <h3 className="mt-4 text-lg font-bold text-white">
+          <h3 className="mt-4 text-lg font-bold text-slate-900">
             {match.teamA.name}
           </h3>
 
@@ -86,7 +86,7 @@ export default function FeaturedMatchCard({
             size="xl"
           />
 
-          <h3 className="mt-4 text-lg font-bold text-white">
+          <h3 className="mt-4 text-lg font-bold text-slate-900">
             {match.teamB.name}
           </h3>
 
@@ -95,13 +95,13 @@ export default function FeaturedMatchCard({
       </div>
 
       {/* Match Info */}
-      <div className="mt-10 rounded-2xl bg-slate-950/40 p-5">
+      <div className="mt-10 rounded-2xl bg-slate-50 p-5">
 
         <p className="text-center text-sm uppercase tracking-widest text-slate-400">
           Match Starts
         </p>
 
-        <p className="mt-2 text-center text-xl font-bold text-white">
+        <p className="mt-2 text-center text-xl font-bold text-slate-900">
           {match.matchTime}
         </p>
 

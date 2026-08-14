@@ -1,138 +1,55 @@
-"use client";
-
-import { useState } from "react";
 import Link from "next/link";
-import { Menu, X } from "lucide-react";
+import { CalendarDays, Home, Info, Trophy } from "lucide-react";
 
-interface MobileNavigationProps {
-  pathname: string;
-}
-
-const navigation = [
-  {
-    name: "Home",
-    href: "/",
-  },
-  {
-    name: "Schedule",
-    href: "/schedule",
-  },
-  {
-    name: "Standings",
-    href: "/standings",
-  },
-  {
-    name: "About",
-    href: "/about",
-  },
-  {
-    name: "Rules",
-    href: "/rules",
-  },
+const navigationItems = [
+  { href: "/", label: "Home", icon: Home },
+  { href: "/schedule", label: "Schedule", icon: CalendarDays },
+  { href: "/standing", label: "Standing", icon: Trophy },
+  { href: "/about", label: "About", icon: Info },
 ];
 
-export default function MobileNavigation({
-  pathname,
-}: Readonly<MobileNavigationProps>) {
-  const [open, setOpen] = useState(false);
-
-  const closeMenu = () => setOpen(false);
-
+export default function MobileNavigation() {
   return (
-    <div className="lg:hidden">
-
-      {/* Menu Button */}
-      <button
-        type="button"
-        aria-label="Open navigation"
-        onClick={() => setOpen(true)}
-        className="rounded-xl border border-slate-200 p-2 transition hover:bg-slate-100"
-      >
-        <Menu className="h-6 w-6 text-slate-800" />
-      </button>
-
-      {/* Overlay */}
-      {open && (
-        <div
-          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
-          onClick={closeMenu}
-        />
-      )}
-
-      {/* Drawer */}
-      <aside
-        className={[
-          "fixed right-0 top-0 z-50",
-          "flex h-screen w-80 max-w-full flex-col",
-          "bg-white shadow-2xl",
-          "transition-transform duration-300",
-          open ? "translate-x-0" : "translate-x-full",
-        ].join(" ")}
-      >
-
-        {/* Header */}
-        <div className="flex items-center justify-between border-b p-5">
-
-          <h2 className="text-lg font-bold text-slate-900">
-            Navigation
-          </h2>
-
-          <button
-            type="button"
-            aria-label="Close navigation"
-            onClick={closeMenu}
-            className="rounded-lg p-2 transition hover:bg-slate-100"
+    <nav
+      aria-label="Mobile Navigation"
+      className="
+        fixed
+        inset-x-0
+        bottom-0
+        z-[100]
+        border-t
+        border-slate-200
+        bg-white/95
+        shadow-[0_-6px_24px_rgba(15,23,42,0.10)]
+        backdrop-blur-md
+        lg:hidden
+      "
+    >
+      <div className="mx-auto flex h-16 max-w-md">
+        {navigationItems.map(({ href, label, icon: Icon }) => (
+          <Link
+            key={href}
+            href={href}
+            className="
+              flex
+              flex-1
+              flex-col
+              items-center
+              justify-center
+              gap-0.5
+              text-[10px]
+              font-bold
+              text-slate-600
+              transition
+              hover:text-amber-600
+              active:text-amber-600
+            "
           >
-            <X className="h-6 w-6" />
-          </button>
-
-        </div>
-
-        {/* Navigation */}
-        <nav className="flex-1 px-5 py-6">
-
-          <ul className="space-y-2">
-
-            {navigation.map((item) => {
-              const isActive =
-                item.href === "/"
-                  ? pathname === "/"
-                  : pathname.startsWith(item.href);
-
-              return (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    onClick={closeMenu}
-                    className={[
-                      "block rounded-xl px-4 py-3",
-                      "font-semibold transition-all duration-200",
-                      isActive
-                        ? "bg-amber-500 text-white"
-                        : "text-slate-700 hover:bg-slate-100",
-                    ].join(" ")}
-                  >
-                    {item.name}
-                  </Link>
-                </li>
-              );
-            })}
-
-          </ul>
-
-        </nav>
-
-        {/* Footer */}
-        <div className="border-t p-5">
-
-          <p className="text-center text-sm text-slate-500">
-            Elite Battlegrounds Series
-          </p>
-
-        </div>
-
-      </aside>
-
-    </div>
+            <Icon className="h-5 w-5" strokeWidth={2.3} />
+            <span>{label}</span>
+          </Link>
+        ))}
+      </div>
+    </nav>
   );
 }

@@ -8,7 +8,6 @@ import {
 import TournamentOverviewCard from "@/components/admin/tournament-control/TournamentOverviewCard";
 import TournamentSettingsCard from "@/components/admin/tournament-control/TournamentSettingsCard";
 import TournamentPhaseCard from "@/components/admin/tournament-control/TournamentPhaseCard";
-import PlayoffSettingsCard from "@/components/admin/tournament-control/PlayoffSettingsCard";
 import SchedulePublishingCard from "@/components/admin/tournament-control/SchedulePublishingCard";
 import LivestreamControlCard from "@/components/admin/tournament-control/LivestreamControlCard";
 import TournamentStatisticsCard from "@/components/admin/tournament-control/TournamentStatisticsCard";
@@ -35,10 +34,6 @@ export default async function TournamentControlPage() {
       <div className="grid gap-6 xl:grid-cols-2">
 
         <TournamentSettingsCard
-          tournament={tournament}
-        />
-
-        <TournamentPhaseCard
           tournament={tournament}
         />
 

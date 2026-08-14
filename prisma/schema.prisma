@@ -7,9 +7,736 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-////////////////////////////////////////////////////////////
-// Enums
-////////////////////////////////////////////////////////////
+model Account {
+  id                       String  @id @default(uuid())
+  userId                   String
+  type                     String
+  provider                 String
+  providerAccountId        String
+  refresh_token            String?
+  access_token             String?
+  expires_at               Int?
+  token_type               String?
+  scope                    String?
+  id_token                 String?
+  session_state            String?
+  refresh_token_expires_in Int?
+  user                     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+model User {
+  id                      String                   @id @default(uuid())
+  username                String                   @unique @db.VarChar(50)
+  email                   String                   @unique @db.VarChar(255)
+  displayName             String                   @db.VarChar(100)
+  firstName               String                   @db.VarChar(100)
+  middleName              String?                  @db.VarChar(100)
+  lastName                String                   @db.VarChar(100)
+  passwordHash            String                   @db.VarChar(255)
+  avatarMediaId           String?
+  status                  UserStatus               @default(ACTIVE)
+  emailVerifiedAt         DateTime?
+  lastLoginAt             DateTime?
+  lastActivityAt          DateTime?
+  lastPasswordChangeAt    DateTime?
+  failedLoginAttempts     Int                      @default(0)
+  lockedUntil             DateTime?
+  forcePasswordChange     Boolean                  @default(false)
+  isSystem                Boolean                  @default(false)
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  deletedAt               DateTime?
+  accounts                Account[]
+  activityLogs            ActivityLog[]
+  createdAnnouncements    Announcement[]
+  createdMatchEvents      MatchEvent[]
+  refereeMatches          Match[]
+  uploadedMedia           Media[]
+  notifications           Notification[]
+  assignedRolePermissions RolePermission[]         @relation("AssignedRolePermissions")
+  createdRuleCategories   RuleCategory[]
+  createdRules            Rule[]
+  createdSeasons          Season[]
+  sessions                Session[]
+  updatedSettings         Setting[]
+  createdSponsors         Sponsor[]
+  createdStaticPages      StaticPage[]
+  createdTeams            Team[]
+  reviewedRegistrations   TournamentRegistration[]
+  createdTournaments      Tournament[]
+  assignedUserPermissions UserPermission[]         @relation("AssignedUserPermissions")
+  userPermissions         UserPermission[]         @relation("UserPermissions")
+  assignedUserRoles       UserRole[]               @relation("AssignedUserRoles")
+  userRoles               UserRole[]               @relation("UserRoles")
+  avatar                  Media?                   @relation("UserAvatar", fields: [avatarMediaId], references: [id])
+
+  @@index([status])
+  @@index([displayName])
+  @@index([createdAt])
+  @@index([deletedAt])
+  @@map("users")
+}
+
+model Media {
+  id                String         @id @default(uuid())
+  fileName          String         @db.VarChar(255)
+  originalFileName  String         @db.VarChar(255)
+  mimeType          String         @db.VarChar(100)
+  extension         String         @db.VarChar(20)
+  path              String         @db.VarChar(500)
+  url               String         @db.VarChar(500)
+  type              MediaType
+  size              BigInt
+  width             Int?
+  height            Int?
+  uploadedById      String
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  announcementMedia Announcement[]
+  uploadedBy        User           @relation(fields: [uploadedById], references: [id])
+  sponsorLogos      Sponsor[]
+  teamLogos         Team[]         @relation("TeamLogo")
+  teamPosters       Team[]         @relation("TeamPoster")
+  tournamentBanners Tournament[]
+  userAvatar        User[]         @relation("UserAvatar")
+
+  @@index([uploadedById])
+  @@index([type])
+  @@map("media")
+}
+
+model Role {
+  id              String           @id @default(uuid())
+  name            String           @unique @db.VarChar(100)
+  slug            String           @unique @db.VarChar(100)
+  description     String?          @db.VarChar(255)
+  isSystem        Boolean          @default(false)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  rolePermissions RolePermission[]
+  userRoles       UserRole[]
+
+  @@index([name])
+  @@index([slug])
+  @@map("roles")
+}
+
+model Permission {
+  id              String           @id @default(uuid())
+  name            String           @unique @db.VarChar(100)
+  slug            String           @unique @db.VarChar(150)
+  description     String?          @db.VarChar(255)
+  category        String           @db.VarChar(100)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  rolePermissions RolePermission[]
+  userPermissions UserPermission[]
+
+  @@index([category])
+  @@index([slug])
+  @@map("permissions")
+}
+
+model UserRole {
+  userId       String
+  roleId       String
+  assignedById String?
+  assignedAt   DateTime  @default(now())
+  expiresAt    DateTime?
+  assignedBy   User?     @relation("AssignedUserRoles", fields: [assignedById], references: [id])
+  role         Role      @relation(fields: [roleId], references: [id])
+  user         User      @relation("UserRoles", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@index([roleId])
+  @@index([assignedById])
+  @@map("user_roles")
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  assignedById String?
+  assignedAt   DateTime   @default(now())
+  assignedBy   User?      @relation("AssignedRolePermissions", fields: [assignedById], references: [id])
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@index([permissionId])
+  @@index([assignedById])
+  @@map("role_permissions")
+}
+
+model UserPermission {
+  userId       String
+  permissionId String
+  assignedById String?
+  assignedAt   DateTime   @default(now())
+  expiresAt    DateTime?
+  assignedBy   User?      @relation("AssignedUserPermissions", fields: [assignedById], references: [id])
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  user         User       @relation("UserPermissions", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, permissionId])
+  @@index([permissionId])
+  @@index([assignedById])
+  @@map("user_permissions")
+}
+
+model Season {
+  id          String       @id @default(uuid())
+  name        String       @unique @db.VarChar(150)
+  slug        String       @unique @db.VarChar(150)
+  description String?
+  startDate   DateTime
+  endDate     DateTime
+  isActive    Boolean      @default(false)
+  createdById String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  deletedAt   DateTime?
+  createdBy   User         @relation(fields: [createdById], references: [id])
+  tournaments Tournament[]
+
+  @@index([createdById])
+  @@index([isActive])
+  @@index([deletedAt])
+  @@map("seasons")
+}
+
+model Tournament {
+  id                    String                   @id @default(uuid())
+  name                  String                   @unique @db.VarChar(150)
+  slug                  String                   @unique @db.VarChar(150)
+  description           String?
+  seasonId              String
+  bannerMediaId         String?
+  createdById           String
+  status                TournamentStatus         @default(DRAFT)
+  maxTeams              Int
+  registrationOpensAt   DateTime?
+  registrationClosesAt  DateTime?
+  checkInStartsAt       DateTime?
+  checkInEndsAt         DateTime?
+  startsAt              DateTime
+  endsAt                DateTime?
+  isPublished           Boolean                  @default(false)
+  createdAt             DateTime                 @default(now())
+  updatedAt             DateTime                 @updatedAt
+  deletedAt             DateTime?
+  registrationUrl       String?                  @db.VarChar(500)
+  playoffBracket        PlayoffBracket?
+  playoffQualifications PlayoffQualification[]
+  registrations         TournamentRegistration[]
+  stages                TournamentStage[]
+  banner                Media?                   @relation(fields: [bannerMediaId], references: [id])
+  createdBy             User                     @relation(fields: [createdById], references: [id])
+  season                Season                   @relation(fields: [seasonId], references: [id])
+  scheduleDays          TournamentScheduleDay[]
+
+  @@index([seasonId])
+  @@index([status])
+  @@index([createdById])
+  @@index([deletedAt])
+  @@map("tournaments")
+}
+
+model TournamentStage {
+  id           String                  @id @default(uuid())
+  name         String                  @db.VarChar(100)
+  slug         String                  @db.VarChar(100)
+  tournamentId String
+  type         TournamentStageType
+  displayOrder Int
+  bestOf       BestOfType              @default(BO1)
+  maxTeams     Int?
+  isFinalStage Boolean                 @default(false)
+  createdAt    DateTime                @default(now())
+  updatedAt    DateTime                @updatedAt
+  matches      Match[]
+  standings    Standing[]
+  groups       TournamentGroup[]
+  tournament   Tournament              @relation(fields: [tournamentId], references: [id])
+  scheduleDays TournamentScheduleDay[]
+
+  @@unique([tournamentId, slug])
+  @@unique([tournamentId, displayOrder])
+  @@index([tournamentId])
+  @@index([type])
+  @@map("tournament_stages")
+}
+
+model TournamentGroup {
+  id                String                   @id @default(uuid())
+  name              String                   @db.VarChar(50)
+  slug              String                   @db.VarChar(50)
+  tournamentStageId String
+  displayOrder      Int
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+  matches           Match[]
+  standings         Standing[]
+  tournamentStage   TournamentStage          @relation(fields: [tournamentStageId], references: [id])
+  registrations     TournamentRegistration[]
+
+  @@unique([tournamentStageId, slug])
+  @@unique([tournamentStageId, displayOrder])
+  @@index([tournamentStageId])
+  @@map("tournament_groups")
+}
+
+model Team {
+  id            String                   @id @default(uuid())
+  name          String                   @unique @db.VarChar(100)
+  slug          String                   @unique @db.VarChar(100)
+  abbreviation  String?                  @db.VarChar(20)
+  description   String?
+  logoMediaId   String?
+  createdById   String
+  status        TeamStatus               @default(ACTIVE)
+  createdAt     DateTime                 @default(now())
+  updatedAt     DateTime                 @updatedAt
+  deletedAt     DateTime?
+  posterMediaId String?
+  players       Player[]
+  createdBy     User                     @relation(fields: [createdById], references: [id])
+  logo          Media?                   @relation("TeamLogo", fields: [logoMediaId], references: [id])
+  poster        Media?                   @relation("TeamPoster", fields: [posterMediaId], references: [id])
+  registrations TournamentRegistration[]
+
+  @@index([status])
+  @@index([createdById])
+  @@index([deletedAt])
+  @@map("teams")
+}
+
+model Player {
+  id           String     @id @default(uuid())
+  inGameName   String     @db.VarChar(50)
+  teamId       String
+  role         PlayerRole
+  isCaptain    Boolean    @default(false)
+  isSubstitute Boolean    @default(false)
+  mobileNumber String?    @db.VarChar(20)
+  mlbbId       String?    @db.VarChar(30)
+  mlbbServer   String?    @db.VarChar(20)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  deletedAt    DateTime?
+  team         Team       @relation(fields: [teamId], references: [id])
+
+  @@unique([teamId, inGameName])
+  @@index([teamId])
+  @@index([role])
+  @@index([deletedAt])
+  @@map("players")
+}
+
+model TournamentRegistration {
+  id                   String                       @id @default(uuid())
+  tournamentId         String
+  teamId               String
+  reviewedById         String?
+  status               TournamentRegistrationStatus @default(SUBMITTED)
+  remarks              String?
+  submittedAt          DateTime                     @default(now())
+  reviewedAt           DateTime?
+  createdAt            DateTime                     @default(now())
+  updatedAt            DateTime                     @updatedAt
+  tournamentGroupId    String?
+  participants         MatchParticipant[]
+  playoffSlotsAsTeamA  PlayoffBracketSlot[]         @relation("PlayoffSlotTeamA")
+  playoffSlotsAsTeamB  PlayoffBracketSlot[]         @relation("PlayoffSlotTeamB")
+  playoffWins          PlayoffBracketSlot[]         @relation("PlayoffSlotWinner")
+  playoffQualification PlayoffQualification?
+  standings            Standing[]
+  reviewedBy           User?                        @relation(fields: [reviewedById], references: [id])
+  team                 Team                         @relation(fields: [teamId], references: [id])
+  tournamentGroup      TournamentGroup?             @relation(fields: [tournamentGroupId], references: [id])
+  tournament           Tournament                   @relation(fields: [tournamentId], references: [id])
+
+  @@unique([tournamentId, teamId])
+  @@index([status])
+  @@index([teamId])
+  @@index([reviewedById])
+  @@map("tournament_registrations")
+}
+
+model TournamentScheduleDay {
+  id String @id @default(uuid())
+
+  tournamentId String
+  stageId      String
+
+  dayNumber     Int
+  name          String    @db.VarChar(50)
+  scheduledDate DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tournament Tournament      @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  stage      TournamentStage @relation(fields: [stageId], references: [id], onDelete: Cascade)
+  matches    Match[]
+
+  @@unique([stageId, dayNumber])
+  @@index([tournamentId])
+  @@index([stageId])
+  @@map("tournament_schedule_days")
+}
+
+model PlayoffQualification {
+  id                       String                 @id @default(uuid())
+  tournamentId             String
+  tournamentRegistrationId String                 @unique
+  seed                     Int
+  createdAt                DateTime               @default(now())
+  updatedAt                DateTime               @updatedAt
+  tournament               Tournament             @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  tournamentRegistration   TournamentRegistration @relation(fields: [tournamentRegistrationId], references: [id], onDelete: Cascade)
+
+  @@unique([tournamentId, seed])
+  @@index([tournamentId])
+  @@index([tournamentRegistrationId])
+  @@index([seed])
+  @@map("playoff_qualifications")
+}
+
+model PlayoffBracket {
+  id           String               @id @default(uuid())
+  tournamentId String               @unique
+  name         String               @default("Playoffs") @db.VarChar(100)
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  slots        PlayoffBracketSlot[]
+  tournament   Tournament           @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+
+  @@map("playoff_brackets")
+}
+
+model PlayoffBracketSlot {
+  id                   String                  @id @default(uuid())
+  bracketId            String
+  matchId              String?
+  teamARegistrationId  String?
+  teamBRegistrationId  String?
+  slotKey              String                  @db.VarChar(50)
+  label                String                  @db.VarChar(100)
+  bracketSide          String                  @db.VarChar(20)
+  roundOrder           Int
+  slotOrder            Int
+  positionX            Float?
+  positionY            Float?
+  isCompleted          Boolean                 @default(false)
+  scoreA               Int                     @default(0)
+  scoreB               Int                     @default(0)
+  winnerRegistrationId String?
+  bracket              PlayoffBracket          @relation(fields: [bracketId], references: [id], onDelete: Cascade)
+  match                Match?                  @relation(fields: [matchId], references: [id])
+  teamARegistration    TournamentRegistration? @relation("PlayoffSlotTeamA", fields: [teamARegistrationId], references: [id])
+  teamBRegistration    TournamentRegistration? @relation("PlayoffSlotTeamB", fields: [teamBRegistrationId], references: [id])
+  winnerRegistration   TournamentRegistration? @relation("PlayoffSlotWinner", fields: [winnerRegistrationId], references: [id])
+
+  @@unique([bracketId, slotKey])
+  @@index([bracketId])
+  @@index([matchId])
+  @@index([teamARegistrationId])
+  @@index([teamBRegistrationId])
+  @@index([winnerRegistrationId])
+  @@map("playoff_bracket_slots")
+}
+
+model Match {
+  id                  String                 @id @default(uuid())
+  matchNumber         Int
+  roundName           String                 @db.VarChar(100)
+  tournamentStageId   String
+  tournamentGroupId   String?
+  refereeId           String?
+  status              MatchStatus            @default(DRAFT)
+  bestOf              BestOfType             @default(BO1)
+  winner              MatchResult?
+  scheduledAt         DateTime?
+  startedAt           DateTime?
+  completedAt         DateTime?
+  streamUrl           String?                @db.VarChar(500)
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+  events              MatchEvent[]
+  games               MatchGame[]
+  participants        MatchParticipant[]
+  referee             User?                  @relation(fields: [refereeId], references: [id])
+  tournamentGroup     TournamentGroup?       @relation(fields: [tournamentGroupId], references: [id])
+  tournamentStage     TournamentStage        @relation(fields: [tournamentStageId], references: [id])
+  playoffBracketSlots PlayoffBracketSlot[]
+  scheduleDayId       String?
+  scheduleDay         TournamentScheduleDay? @relation(fields: [scheduleDayId], references: [id], onDelete: SetNull)
+
+  @@unique([tournamentStageId, matchNumber])
+  @@index([scheduleDayId])
+  @@index([status])
+  @@index([scheduledAt])
+  @@index([refereeId])
+  @@index([tournamentGroupId])
+  @@map("matches")
+}
+
+model MatchParticipant {
+  matchId                  String
+  tournamentRegistrationId String
+  side                     MatchSide
+  score                    Int                    @default(0)
+  isWinner                 Boolean                @default(false)
+  match                    Match                  @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  tournamentRegistration   TournamentRegistration @relation(fields: [tournamentRegistrationId], references: [id], onDelete: Cascade)
+
+  @@id([matchId, tournamentRegistrationId])
+  @@index([tournamentRegistrationId])
+  @@index([side])
+  @@map("match_participants")
+}
+
+model MatchGame {
+  id              String       @id @default(uuid())
+  matchId         String
+  gameNumber      Int
+  winner          MatchResult?
+  durationSeconds Int?
+  startedAt       DateTime?
+  completedAt     DateTime?
+  createdAt       DateTime     @default(now())
+  match           Match        @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  @@unique([matchId, gameNumber])
+  @@index([matchId])
+  @@map("match_games")
+}
+
+model MatchEvent {
+  id          String   @id @default(uuid())
+  matchId     String
+  createdById String?
+  type        String   @db.VarChar(100)
+  description String
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  createdBy   User?    @relation(fields: [createdById], references: [id])
+  match       Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  @@index([matchId])
+  @@index([createdById])
+  @@index([type])
+  @@map("match_events")
+}
+
+model Standing {
+  id                       String                 @id @default(uuid())
+  tournamentStageId        String
+  tournamentGroupId        String?
+  tournamentRegistrationId String
+  played                   Int                    @default(0)
+  wins                     Int                    @default(0)
+  losses                   Int                    @default(0)
+  draws                    Int                    @default(0)
+  gameWins                 Int                    @default(0)
+  gameLosses               Int                    @default(0)
+  points                   Int                    @default(0)
+  rank                     Int?
+  createdAt                DateTime               @default(now())
+  updatedAt                DateTime               @updatedAt
+  tournamentGroup          TournamentGroup?       @relation(fields: [tournamentGroupId], references: [id])
+  tournamentRegistration   TournamentRegistration @relation(fields: [tournamentRegistrationId], references: [id], onDelete: Cascade)
+  tournamentStage          TournamentStage        @relation(fields: [tournamentStageId], references: [id], onDelete: Cascade)
+
+  @@unique([tournamentStageId, tournamentRegistrationId])
+  @@index([tournamentGroupId])
+  @@index([tournamentRegistrationId])
+  @@index([points])
+  @@map("standings")
+}
+
+model RuleCategory {
+  id          String    @id @default(uuid())
+  name        String    @unique @db.VarChar(100)
+  slug        String    @unique @db.VarChar(100)
+  description String?
+  createdById String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+  createdBy   User      @relation(fields: [createdById], references: [id])
+  rules       Rule[]
+
+  @@index([createdById])
+  @@index([deletedAt])
+  @@map("rule_categories")
+}
+
+model Rule {
+  id          String            @id @default(uuid())
+  title       String            @db.VarChar(200)
+  categoryId  String
+  createdById String
+  content     String
+  status      PublicationStatus @default(DRAFT)
+  publishedAt DateTime?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  deletedAt   DateTime?
+  category    RuleCategory      @relation(fields: [categoryId], references: [id])
+  createdBy   User              @relation(fields: [createdById], references: [id])
+
+  @@index([categoryId])
+  @@index([status])
+  @@index([deletedAt])
+  @@map("rules")
+}
+
+model Announcement {
+  id              String            @id @default(uuid())
+  title           String            @db.VarChar(200)
+  slug            String            @unique @db.VarChar(200)
+  featuredMediaId String?
+  createdById     String
+  summary         String?
+  content         String
+  status          PublicationStatus @default(DRAFT)
+  publishedAt     DateTime?
+  metaTitle       String?           @db.VarChar(200)
+  metaDescription String?           @db.VarChar(300)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  deletedAt       DateTime?
+  createdBy       User              @relation(fields: [createdById], references: [id])
+  featuredMedia   Media?            @relation(fields: [featuredMediaId], references: [id])
+
+  @@index([status])
+  @@index([publishedAt])
+  @@index([deletedAt])
+  @@map("announcements")
+}
+
+model Sponsor {
+  id           String            @id @default(uuid())
+  name         String            @unique @db.VarChar(150)
+  slug         String            @unique @db.VarChar(150)
+  logoMediaId  String?
+  createdById  String
+  description  String?
+  websiteUrl   String?           @db.VarChar(500)
+  status       PublicationStatus @default(PUBLISHED)
+  displayOrder Int               @default(0)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  createdBy    User              @relation(fields: [createdById], references: [id])
+  logo         Media?            @relation(fields: [logoMediaId], references: [id])
+
+  @@index([status])
+  @@index([displayOrder])
+  @@map("sponsors")
+}
+
+model StaticPage {
+  id              String            @id @default(uuid())
+  title           String            @db.VarChar(200)
+  slug            String            @unique @db.VarChar(200)
+  content         String
+  status          PublicationStatus @default(DRAFT)
+  publishedAt     DateTime?
+  metaTitle       String?           @db.VarChar(200)
+  metaDescription String?           @db.VarChar(300)
+  createdById     String
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  createdBy       User              @relation(fields: [createdById], references: [id])
+
+  @@index([status])
+  @@index([publishedAt])
+  @@map("static_pages")
+}
+
+model Setting {
+  id          String          @id @default(uuid())
+  key         String          @unique @db.VarChar(150)
+  name        String          @db.VarChar(150)
+  updatedById String?
+  value       Json
+  dataType    SettingDataType
+  category    String          @db.VarChar(100)
+  isEditable  Boolean         @default(true)
+  isSystem    Boolean         @default(false)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  updatedBy   User?           @relation(fields: [updatedById], references: [id])
+
+  @@index([category])
+  @@index([isEditable])
+  @@index([isSystem])
+  @@map("settings")
+}
+
+model Notification {
+  id        String    @id @default(uuid())
+  userId    String
+  title     String    @db.VarChar(200)
+  message   String
+  type      String    @db.VarChar(100)
+  actionUrl String?   @db.VarChar(500)
+  isRead    Boolean   @default(false)
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([type])
+  @@index([isRead])
+  @@map("notifications")
+}
+
+model ActivityLog {
+  id          String      @id @default(uuid())
+  userId      String?
+  action      AuditAction
+  entity      String      @db.VarChar(100)
+  entityId    String?     @db.VarChar(100)
+  description String
+  metadata    Json?
+  ipAddress   String?     @db.VarChar(45)
+  userAgent   String?     @db.VarChar(500)
+  createdAt   DateTime    @default(now())
+  user        User?       @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([action])
+  @@index([entity])
+  @@index([createdAt])
+  @@map("activity_logs")
+}
 
 enum UserStatus {
   ACTIVE
@@ -118,1216 +845,4 @@ enum AuditAction {
   LOGOUT
   APPROVE
   REJECT
-}
-
-////////////////////////////////////////////////////////////
-// Auth.js Models
-////////////////////////////////////////////////////////////
-
-model Account {
-  id                        String  @id @default(uuid())
-  userId                    String
-  type                      String
-  provider                  String
-  providerAccountId         String
-  refresh_token             String? @db.Text
-  access_token              String? @db.Text
-  expires_at                Int?
-  token_type                String?
-  scope                     String?
-  id_token                  String? @db.Text
-  session_state             String?
-  refresh_token_expires_in  Int?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([provider, providerAccountId])
-  @@index([userId])
-  @@map("accounts")
-}
-
-model Session {
-  id           String   @id @default(uuid())
-  sessionToken String   @unique
-  userId       String
-  expires      DateTime
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@map("sessions")
-}
-
-model VerificationToken {
-  identifier String
-  token      String   @unique
-  expires    DateTime
-
-  @@unique([identifier, token])
-  @@map("verification_tokens")
-}
-
-////////////////////////////////////////////////////////////
-// Identity
-////////////////////////////////////////////////////////////
-
-model User {
-  id String @id @default(uuid())
-
-  // Identity
-
-  username    String  @unique @db.VarChar(50)
-  email       String  @unique @db.VarChar(255)
-  displayName String  @db.VarChar(100)
-  firstName   String  @db.VarChar(100)
-  middleName  String? @db.VarChar(100)
-  lastName    String  @db.VarChar(100)
-
-  // Authentication
-
-  passwordHash String @db.VarChar(255)
-
-  // Profile
-
-  avatarMediaId String?
-
-  // Security
-
-  status               UserStatus @default(ACTIVE)
-  emailVerifiedAt      DateTime?
-  lastLoginAt          DateTime?
-  lastActivityAt       DateTime?
-  lastPasswordChangeAt DateTime?
-
-  failedLoginAttempts Int @default(0)
-
-  lockedUntil DateTime?
-
-  forcePasswordChange Boolean @default(false)
-
-  isSystem Boolean @default(false)
-
-  // Audit
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  deletedAt DateTime?
-
-  // Relations
-
-  avatar Media? @relation("UserAvatar", fields: [avatarMediaId], references: [id], onDelete: SetNull)
-
-  accounts Account[]
-
-  sessions Session[]
-
-  uploadedMedia Media[]
-
-  userRoles UserRole[] @relation("UserRoles")
-
-  userPermissions UserPermission[] @relation("UserPermissions")
-
-  createdSeasons Season[]
-
-  createdTournaments Tournament[]
-
-  createdTeams Team[]
-
-  reviewedRegistrations TournamentRegistration[]
-
-  refereeMatches Match[]
-
-  createdMatchEvents MatchEvent[]
-
-  createdRuleCategories RuleCategory[]
-
-  createdRules Rule[]
-
-  createdAnnouncements Announcement[]
-
-  createdSponsors Sponsor[]
-
-  createdStaticPages StaticPage[]
-
-  updatedSettings Setting[]
-
-  notifications Notification[]
-
-  activityLogs ActivityLog[]
-
-  assignedRolePermissions RolePermission[] @relation("AssignedRolePermissions")
-
-  assignedUserRoles UserRole[] @relation("AssignedUserRoles")
-
-  assignedUserPermissions UserPermission[] @relation("AssignedUserPermissions")
-
-  @@index([status])
-
-  @@index([displayName])
-
-  @@index([createdAt])
-
-  @@index([deletedAt])
-
-  @@map("users")
-}
-
-model Media {
-  id String @id @default(uuid())
-
-  // File Information
-
-  fileName String @db.VarChar(255)
-
-  originalFileName String @db.VarChar(255)
-
-  mimeType String @db.VarChar(100)
-
-  extension String @db.VarChar(20)
-
-  // Storage
-
-  path String @db.VarChar(500)
-
-  url String @db.VarChar(500)
-
-  // Metadata
-
-  type MediaType
-
-  size BigInt
-
-  width Int?
-
-  height Int?
-
-  // Foreign Keys
-
-  uploadedById String
-
-  // Audit
-
-  createdAt DateTime @default(now())
-
-  updatedAt DateTime @updatedAt
-
-  // Relations
-
-  uploadedBy User @relation(fields: [uploadedById], references: [id], onDelete: Restrict)
-
-  userAvatar User[] @relation("UserAvatar")
-
-  tournamentBanners Tournament[]
-
-  teamLogos Team[]
-
-  announcementMedia Announcement[]
-
-  sponsorLogos Sponsor[]
-
-  @@index([uploadedById])
-
-  @@index([type])
-
-  @@map("media")
-}
-
-////////////////////////////////////////////////////////////
-// Role-Based Access Control (RBAC)
-////////////////////////////////////////////////////////////
-
-model Role {
-  id String @id @default(uuid())
-
-  // Identity
-
-  name        String  @unique @db.VarChar(100)
-  slug        String  @unique @db.VarChar(100)
-  description String? @db.VarChar(255)
-
-  // Business
-
-  isSystem Boolean @default(false)
-
-  // Audit
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-
-  userRoles UserRole[]
-
-  rolePermissions RolePermission[]
-
-  @@index([name])
-
-  @@index([slug])
-
-  @@map("roles")
-}
-
-model Permission {
-  id String @id @default(uuid())
-
-  // Identity
-
-  name        String  @unique @db.VarChar(100)
-  slug        String  @unique @db.VarChar(150)
-  description String? @db.VarChar(255)
-
-  // Business
-
-  category String @db.VarChar(100)
-
-  // Audit
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-
-  rolePermissions RolePermission[]
-
-  userPermissions UserPermission[]
-
-  @@index([category])
-
-  @@index([slug])
-
-  @@map("permissions")
-}
-
-model UserRole {
-  userId String
-  roleId String
-
-  assignedById String?
-
-  assignedAt DateTime @default(now())
-
-  expiresAt DateTime?
-
-  // Relations
-
-  user User @relation("UserRoles", fields: [userId], references: [id], onDelete: Cascade)
-
-  role Role @relation(fields: [roleId], references: [id], onDelete: Restrict)
-
-  assignedBy User? @relation("AssignedUserRoles", fields: [assignedById], references: [id], onDelete: SetNull)
-
-  
-
-  @@id([userId, roleId])
-
-  @@index([roleId])
-
-  @@index([assignedById])
-
-  @@map("user_roles")
-}
-
-model RolePermission {
-  roleId String
-
-  permissionId String
-
-  assignedById String?
-
-  assignedAt DateTime @default(now())
-
-  // Relations
-
-  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
-
-  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
-
-  assignedBy User? @relation("AssignedRolePermissions", fields: [assignedById], references: [id], onDelete: SetNull)
-
-  @@id([roleId, permissionId])
-
-  @@index([permissionId])
-
-  @@index([assignedById])
-
-  @@map("role_permissions")
-}
-
-model UserPermission {
-  userId String
-
-  permissionId String
-
-  assignedById String?
-
-  assignedAt DateTime @default(now())
-
-  expiresAt DateTime?
-
-  // Relations
-
-  user User @relation("UserPermissions", fields: [userId], references: [id], onDelete: Cascade)
-
-  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
-
-  assignedBy User? @relation("AssignedUserPermissions", fields: [assignedById], references: [id], onDelete: SetNull)
-
-  @@id([userId, permissionId])
-
-  @@index([permissionId])
-
-  @@index([assignedById])
-
-  @@map("user_permissions")
-}
-
-////////////////////////////////////////////////////////////
-// Tournament Core
-////////////////////////////////////////////////////////////
-
-model Season {
-  id String @id @default(uuid())
-
-  // Identity
-
-  name        String  @unique @db.VarChar(150)
-  slug        String  @unique @db.VarChar(150)
-  description String? @db.Text
-
-  // Business
-
-  startDate DateTime
-  endDate   DateTime
-
-  isActive Boolean @default(false)
-
-  // Foreign Keys
-
-  createdById String
-
-  // Audit
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  deletedAt DateTime?
-
-  // Relations
-
-  createdBy User @relation(fields: [createdById], references: [id], onDelete: Restrict)
-
-  tournaments Tournament[]
-
-  @@index([createdById])
-  @@index([isActive])
-  @@index([deletedAt])
-
-  @@map("seasons")
-}
-
-model Tournament {
-  id String @id @default(uuid())
-
-  // Identity
-
-  name        String  @unique @db.VarChar(150)
-  slug        String  @unique @db.VarChar(150)
-  description String? @db.Text
-
-  // Foreign Keys
-
-  seasonId      String
-  bannerMediaId String?
-  createdById   String
-
-  // Business
-
-  status TournamentStatus @default(DRAFT)
-
-  maxTeams Int
-
-  registrationOpensAt DateTime?
-  registrationClosesAt DateTime?
-
-  checkInStartsAt DateTime?
-  checkInEndsAt DateTime?
-
-  startsAt DateTime
-  endsAt DateTime?
-
-  isPublished Boolean @default(false)
-
-  // Audit
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  deletedAt DateTime?
-
-  // Relations
-
-  season Season @relation(fields: [seasonId], references: [id], onDelete: Restrict)
-
-  banner Media? @relation(fields: [bannerMediaId], references: [id], onDelete: SetNull)
-
-  createdBy User @relation(fields: [createdById], references: [id], onDelete: Restrict)
-
-  stages TournamentStage[]
-
-  registrations TournamentRegistration[]
-
-  @@index([seasonId])
-  @@index([status])
-  @@index([createdById])
-  @@index([deletedAt])
-
-  @@map("tournaments")
-}
-
-model TournamentStage {
-  id String @id @default(uuid())
-
-  // Identity
-
-  name String @db.VarChar(100)
-
-  slug String @db.VarChar(100)
-
-  // Foreign Keys
-
-  tournamentId String
-
-  // Business
-
-  type TournamentStageType
-
-  displayOrder Int
-
-  bestOf BestOfType @default(BO1)
-
-  maxTeams Int?
-
-  isFinalStage Boolean @default(false)
-
-  // Audit
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-
-  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Restrict)
-
-  groups TournamentGroup[]
-
-  matches Match[]
-
-  standings Standing[]
-
-  @@unique([tournamentId, slug])
-
-  @@unique([tournamentId, displayOrder])
-
-  @@index([tournamentId])
-
-  @@index([type])
-
-  @@map("tournament_stages")
-}
-
-model TournamentGroup {
-  id String @id @default(uuid())
-
-  // Identity
-
-  name String @db.VarChar(50)
-
-  slug String @db.VarChar(50)
-
-  // Foreign Keys
-
-  tournamentStageId String
-
-  // Business
-
-  displayOrder Int
-
-  // Audit
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-
-  tournamentStage TournamentStage @relation(fields: [tournamentStageId], references: [id], onDelete: Restrict)
-
-  matches Match[]
-
-  standings Standing[]
-
-  @@unique([tournamentStageId, slug])
-
-  @@unique([tournamentStageId, displayOrder])
-
-  @@index([tournamentStageId])
-
-  @@map("tournament_groups")
-}
-
-////////////////////////////////////////////////////////////
-// Teams & Tournament Registration
-////////////////////////////////////////////////////////////
-
-model Team {
-  id String @id @default(uuid())
-
-  // Identity
-
-  name         String  @unique @db.VarChar(100)
-  slug         String  @unique @db.VarChar(100)
-  abbreviation String? @db.VarChar(20)
-  description  String? @db.Text
-
-  // Foreign Keys
-
-  logoMediaId String?
-  createdById String
-
-  // Business
-
-  status TeamStatus @default(ACTIVE)
-
-  // Audit
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  deletedAt DateTime?
-
-  // Relations
-
-  logo Media? @relation(fields: [logoMediaId], references: [id], onDelete: SetNull)
-
-  createdBy User @relation(fields: [createdById], references: [id], onDelete: Restrict)
-
-  players Player[]
-
-  registrations TournamentRegistration[]
-
-  @@index([status])
-  @@index([createdById])
-  @@index([deletedAt])
-
-  @@map("teams")
-}
-
-model Player {
-  id String @id @default(uuid())
-
-  // Identity
-
-  inGameName String  @db.VarChar(50)
-  realName   String? @db.VarChar(150)
-
-  // Foreign Keys
-
-  teamId String
-
-  // Business
-
-  role PlayerRole
-
-  isCaptain Boolean @default(false)
-
-  isSubstitute Boolean @default(false)
-
-  mobileNumber String? @db.VarChar(20)
-
-  mlbbId     String? @db.VarChar(30)
-  mlbbServer String? @db.VarChar(20)
-
-  // Audit
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  deletedAt DateTime?
-
-  // Relations
-
-  team Team @relation(fields: [teamId], references: [id], onDelete: Restrict)
-
-  @@unique([teamId, inGameName])
-
-  @@index([teamId])
-  @@index([role])
-  @@index([deletedAt])
-
-  @@map("players")
-}
-
-model TournamentRegistration {
-  id String @id @default(uuid())
-
-  // Foreign Keys
-
-  tournamentId String
-  teamId String
-  reviewedById String?
-
-  // Business
-
-  status TournamentRegistrationStatus @default(SUBMITTED)
-
-  remarks String? @db.Text
-
-  submittedAt DateTime @default(now())
-  reviewedAt DateTime?
-
-  // Audit
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-
-  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Restrict)
-
-  team Team @relation(fields: [teamId], references: [id], onDelete: Restrict)
-
-  reviewedBy User? @relation(fields: [reviewedById], references: [id], onDelete: SetNull)
-
-  participants MatchParticipant[]
-
-  standings Standing[]
-
-  @@unique([tournamentId, teamId])
-
-  @@index([status])
-  @@index([teamId])
-  @@index([reviewedById])
-
-  @@map("tournament_registrations")
-}
-
-////////////////////////////////////////////////////////////
-// Match Engine
-////////////////////////////////////////////////////////////
-
-model Match {
-  id String @id @default(uuid())
-
-  // Identity
-
-  matchNumber Int
-  roundName   String @db.VarChar(100)
-
-  // Foreign Keys
-
-  tournamentStageId String
-  tournamentGroupId String?
-  refereeId         String?
-
-  // Business
-
-  status MatchStatus @default(DRAFT)
-
-  bestOf BestOfType @default(BO1)
-
-  winner MatchResult?
-
-  scheduledAt DateTime?
-  startedAt   DateTime?
-  completedAt DateTime?
-
-  streamUrl String? @db.VarChar(500)
-
-  // Audit
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-
-  tournamentStage TournamentStage @relation(fields: [tournamentStageId], references: [id], onDelete: Restrict)
-
-  tournamentGroup TournamentGroup? @relation(fields: [tournamentGroupId], references: [id], onDelete: SetNull)
-
-  referee User? @relation(fields: [refereeId], references: [id], onDelete: SetNull)
-
-  participants MatchParticipant[]
-
-  games MatchGame[]
-
-  events MatchEvent[]
-
-  @@unique([tournamentStageId, matchNumber])
-
-  @@index([status])
-  @@index([scheduledAt])
-  @@index([refereeId])
-  @@index([tournamentGroupId])
-
-  @@map("matches")
-}
-
-model MatchParticipant {
-  matchId String
-  tournamentRegistrationId String
-
-  // Business
-
-  side MatchSide
-
-  score Int @default(0)
-
-  isWinner Boolean @default(false)
-
-  // Relations
-
-  match Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
-
-  tournamentRegistration TournamentRegistration @relation(fields: [tournamentRegistrationId], references: [id], onDelete: Cascade)
-
-  @@id([matchId, tournamentRegistrationId])
-
-  @@index([tournamentRegistrationId])
-  @@index([side])
-
-  @@map("match_participants")
-}
-
-model MatchGame {
-  id String @id @default(uuid())
-
-  // Foreign Keys
-
-  matchId String
-
-  // Business
-
-  gameNumber Int
-
-  winner MatchResult?
-
-  durationSeconds Int?
-
-  startedAt DateTime?
-  completedAt DateTime?
-
-  // Audit
-
-  createdAt DateTime @default(now())
-
-  // Relations
-
-  match Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
-
-  @@unique([matchId, gameNumber])
-
-  @@index([matchId])
-
-  @@map("match_games")
-}
-
-model MatchEvent {
-  id String @id @default(uuid())
-
-  // Foreign Keys
-
-  matchId String
-  createdById String?
-
-  // Business
-
-  type String @db.VarChar(100)
-
-  description String @db.Text
-
-  metadata Json?
-
-  // Audit
-
-  createdAt DateTime @default(now())
-
-  // Relations
-
-  match Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
-
-  createdBy User? @relation(fields: [createdById], references: [id], onDelete: SetNull)
-
-  @@index([matchId])
-  @@index([createdById])
-  @@index([type])
-
-  @@map("match_events")
-}
-
-model Standing {
-  id String @id @default(uuid())
-
-  // Foreign Keys
-
-  tournamentStageId String
-  tournamentGroupId String?
-  tournamentRegistrationId String
-
-  // Statistics
-
-  played Int @default(0)
-  wins Int @default(0)
-  losses Int @default(0)
-  draws Int @default(0)
-
-  gameWins Int @default(0)
-  gameLosses Int @default(0)
-
-  points Int @default(0)
-
-  rank Int?
-
-  // Audit
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-
-  tournamentStage TournamentStage @relation(fields: [tournamentStageId], references: [id], onDelete: Cascade)
-
-  tournamentGroup TournamentGroup? @relation(fields: [tournamentGroupId], references: [id], onDelete: SetNull)
-
-  tournamentRegistration TournamentRegistration @relation(fields: [tournamentRegistrationId], references: [id], onDelete: Cascade)
-
-  @@unique([tournamentStageId, tournamentRegistrationId])
-
-  @@index([tournamentGroupId])
-  @@index([tournamentRegistrationId])
-  @@index([points])
-
-  @@map("standings")
-}
-
-////////////////////////////////////////////////////////////
-// Content Management
-////////////////////////////////////////////////////////////
-
-model RuleCategory {
-  id String @id @default(uuid())
-
-  // Identity
-
-  name        String  @unique @db.VarChar(100)
-  slug        String  @unique @db.VarChar(100)
-  description String? @db.Text
-
-  // Foreign Keys
-
-  createdById String
-
-  // Audit
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  deletedAt DateTime?
-
-  // Relations
-
-  createdBy User @relation(fields: [createdById], references: [id], onDelete: Restrict)
-
-  rules Rule[]
-
-  @@index([createdById])
-  @@index([deletedAt])
-
-  @@map("rule_categories")
-}
-
-model Rule {
-  id String @id @default(uuid())
-
-  // Identity
-
-  title String @db.VarChar(200)
-
-  // Foreign Keys
-
-  categoryId  String
-  createdById String
-
-  // Content
-
-  content String @db.Text
-
-  status PublicationStatus @default(DRAFT)
-
-  publishedAt DateTime?
-
-  // Audit
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  deletedAt DateTime?
-
-  // Relations
-
-  category RuleCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-
-  createdBy User @relation(fields: [createdById], references: [id], onDelete: Restrict)
-
-  @@index([categoryId])
-  @@index([status])
-  @@index([deletedAt])
-
-  @@map("rules")
-}
-
-model Announcement {
-  id String @id @default(uuid())
-
-  // Identity
-
-  title String @db.VarChar(200)
-
-  slug String @unique @db.VarChar(200)
-
-  // Foreign Keys
-
-  featuredMediaId String?
-  createdById String
-
-  // Content
-
-  summary String? @db.Text
-
-  content String @db.Text
-
-  status PublicationStatus @default(DRAFT)
-
-  publishedAt DateTime?
-
-  // SEO
-
-  metaTitle String? @db.VarChar(200)
-
-  metaDescription String? @db.VarChar(300)
-
-  // Audit
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  deletedAt DateTime?
-
-  // Relations
-
-  featuredMedia Media? @relation(fields: [featuredMediaId], references: [id], onDelete: SetNull)
-
-  createdBy User @relation(fields: [createdById], references: [id], onDelete: Restrict)
-
-  @@index([status])
-  @@index([publishedAt])
-  @@index([deletedAt])
-
-  @@map("announcements")
-}
-
-model Sponsor {
-  id String @id @default(uuid())
-
-  // Identity
-
-  name String @unique @db.VarChar(150)
-
-  slug String @unique @db.VarChar(150)
-
-  // Foreign Keys
-
-  logoMediaId String?
-
-  createdById String
-
-  // Business
-
-  description String? @db.Text
-
-  websiteUrl String? @db.VarChar(500)
-
-  status PublicationStatus @default(PUBLISHED)
-
-  displayOrder Int @default(0)
-
-  // Audit
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-
-  logo Media? @relation(fields: [logoMediaId], references: [id], onDelete: SetNull)
-
-  createdBy User @relation(fields: [createdById], references: [id], onDelete: Restrict)
-
-  @@index([status])
-  @@index([displayOrder])
-
-  @@map("sponsors")
-}
-
-model StaticPage {
-  id String @id @default(uuid())
-
-  // Identity
-
-  title String @db.VarChar(200)
-
-  slug String @unique @db.VarChar(200)
-
-  // Content
-
-  content String @db.Text
-
-  status PublicationStatus @default(DRAFT)
-
-  publishedAt DateTime?
-
-  // SEO
-
-  metaTitle String? @db.VarChar(200)
-
-  metaDescription String? @db.VarChar(300)
-
-  // Foreign Keys
-
-  createdById String
-
-  // Audit
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-
-  createdBy User @relation(fields: [createdById], references: [id], onDelete: Restrict)
-
-  @@index([status])
-  @@index([publishedAt])
-
-  @@map("static_pages")
-}
-
-////////////////////////////////////////////////////////////
-// System
-////////////////////////////////////////////////////////////
-
-model Setting {
-  id String @id @default(uuid())
-
-  // Identity
-
-  key  String @unique @db.VarChar(150)
-  name String @db.VarChar(150)
-
-  // Foreign Keys
-
-  updatedById String?
-
-  // Configuration
-
-  value Json
-
-  dataType SettingDataType
-
-  category String @db.VarChar(100)
-
-  isEditable Boolean @default(true)
-
-  isSystem Boolean @default(false)
-
-  // Audit
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-
-  updatedBy User? @relation(fields: [updatedById], references: [id], onDelete: SetNull)
-
-  @@index([category])
-  @@index([isEditable])
-  @@index([isSystem])
-
-  @@map("settings")
-}
-
-model Notification {
-  id String @id @default(uuid())
-
-  // Foreign Keys
-
-  userId String
-
-  // Content
-
-  title String @db.VarChar(200)
-
-  message String @db.Text
-
-  type String @db.VarChar(100)
-
-  actionUrl String? @db.VarChar(500)
-
-  // Status
-
-  isRead Boolean @default(false)
-
-  readAt DateTime?
-
-  // Audit
-
-  createdAt DateTime @default(now())
-
-  // Relations
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([type])
-  @@index([isRead])
-
-  @@map("notifications")
-}
-
-model ActivityLog {
-  id String @id @default(uuid())
-
-  // Foreign Keys
-
-  userId String?
-
-  // Activity
-
-  action AuditAction
-
-  entity String @db.VarChar(100)
-
-  entityId String? @db.VarChar(100)
-
-  description String @db.Text
-
-  metadata Json?
-
-  ipAddress String? @db.VarChar(45)
-
-  userAgent String? @db.VarChar(500)
-
-  // Audit
-
-  createdAt DateTime @default(now())
-
-  // Relations
-
-  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
-
-  @@index([userId])
-  @@index([action])
-  @@index([entity])
-  @@index([createdAt])
-
-  @@map("activity_logs")
 }

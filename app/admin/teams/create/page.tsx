@@ -30,7 +30,7 @@ export default function CreateTeamPage() {
         ]}
       />
 
-      <div className="rounded-2xl bg-white p-8 shadow-sm">
+    <div className="rounded-2xl border border-white/10 bg-slate-900 p-8 shadow-sm">
 
         <TeamForm mode="create" />
 

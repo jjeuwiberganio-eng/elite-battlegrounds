@@ -24,6 +24,28 @@
   --card-foreground: #0f172a;
 
   --destructive: #dc2626;
+}
+  :root {
+  /* Backgrounds */
+  --background: #FAFAF8;
+  --surface: #FFFFFF;
+  --surface-alt: #F5F5F4;
+
+  /* Borders */
+  --border: #E5E7EB;
+
+  /* Text */
+  --heading: #111827;
+  --body: #64748B;
+  --muted: #94A3B8;
+
+  /* Brand */
+  --primary: #D4A017;
+  --primary-light: #F8E7A1;
+
+  /* Dark sections */
+  --navy: #0D1628;
+  --footer: #09111F;
 
   /* Radius */
   --radius: 0.75rem;

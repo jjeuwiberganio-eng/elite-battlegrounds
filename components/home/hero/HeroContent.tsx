@@ -1,93 +1,69 @@
+import HeroActions from "./HeroActions";
+
 interface HeroContentProps {
   hero: {
     title: string;
     subtitle: string;
   };
-
   tournament: {
     name: string;
     season: string;
-  };
-
-  liveStatus: {
-    enabled: boolean;
+    registrationOpen: boolean;
+    registrationUrl?: string;
   };
 }
 
 export default function HeroContent({
   hero,
   tournament,
-  liveStatus,
 }: Readonly<HeroContentProps>) {
   return (
-    <div className="max-w-2xl">
+    <div className="relative z-10 w-full max-w-[680px] px-2 sm:px-4 lg:px-6">
 
-      {/* Tournament Badge */}
-      <div className="flex flex-wrap items-center gap-3">
+      <p className="text-xs font-bold uppercase tracking-[0.32em] text-slate-900 sm:text-sm">
+        {tournament.name}
+      </p>
+<h1 className="mt-8 text-[4.2rem] font-black uppercase leading-[0.82] tracking-[-0.055em] text-slate-950 sm:text-[5.8rem] lg:text-[6.8rem]">
+     Elite
+     </h1>
 
-        <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-4 py-1 text-sm font-semibold uppercase tracking-wider text-amber-300">
-          {tournament.name}
+<h2 className="mt-3 text-[3rem] font-black uppercase leading-[0.9] tracking-[-0.04em] text-amber-600 sm:text-[4rem] lg:text-[4.8rem]">
+    Battlegrounds
+    </h2>
+
+  <div className="mt-3 flex w-full max-w-[570px] items-center justify-center gap-3">
+        <span className="h-[2px] w-10 bg-amber-600 sm:w-14" />
+
+        <span className="text-base font-black uppercase tracking-[0.42em] text-slate-950 sm:text-lg">
+          Series
         </span>
 
-        <span className="rounded-full bg-white/10 px-4 py-1 text-sm font-medium text-white backdrop-blur">
-          {tournament.season}
-        </span>
-
-        {liveStatus.enabled && (
-          <span className="inline-flex items-center gap-2 rounded-full bg-red-600 px-4 py-1 text-sm font-bold text-white">
-
-            <span className="relative flex h-3 w-3">
-
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" />
-
-              <span className="relative inline-flex h-3 w-3 rounded-full bg-white" />
-
-            </span>
-
-            LIVE NOW
-
-          </span>
-        )}
-
+        <span className="h-[2px] w-10 bg-amber-600 sm:w-14" />
       </div>
 
-      {/* Hero Title */}
-      <h1 className="mt-8 text-5xl font-black leading-tight tracking-tight text-white md:text-6xl lg:text-7xl">
-        {hero.title}
-      </h1>
+      <div className="mt-10">
+        <p className="text-xl font-black uppercase italic leading-[1.05] text-slate-950 sm:text-2xl">
+          Play Together.
+          <br />
+          Win Together.
+        </p>
 
-      {/* Subtitle */}
-      <p className="mt-6 max-w-xl text-lg leading-8 text-slate-300 md:text-xl">
-        {hero.subtitle}
-      </p>
+        <p className="mt-3 text-xl font-black uppercase italic text-amber-600 sm:text-2xl">
+          Have Fun!
+        </p>
+      </div>
 
-      {/* Tournament Info */}
-      <div className="mt-10 flex flex-wrap gap-8">
+      {hero.subtitle && (
+        <p className="mt-5 max-w-md text-sm leading-6 text-slate-600">
+          {hero.subtitle}
+        </p>
+      )}
 
-        <div>
-
-          <p className="text-sm uppercase tracking-wider text-slate-400">
-            Tournament
-          </p>
-
-          <p className="mt-1 text-lg font-bold text-white">
-            {tournament.name}
-          </p>
-
-        </div>
-
-        <div>
-
-          <p className="text-sm uppercase tracking-wider text-slate-400">
-            Season
-          </p>
-
-          <p className="mt-1 text-lg font-bold text-white">
-            {tournament.season}
-          </p>
-
-        </div>
-
+      <div className="mt-8">
+        <HeroActions
+          registrationOpen={tournament.registrationOpen}
+          registrationUrl={tournament.registrationUrl}
+        />
       </div>
 
     </div>
