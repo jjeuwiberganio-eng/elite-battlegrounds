@@ -6,8 +6,10 @@ import {
   getQualifiedTeams,
 } from "@/actions/playoffs";
 
+import ClearAllQualifiersButton from "@/components/admin/playoffs/ClearAllQualifiersButton";
 import PageHeader from "@/components/admin/shared/PageHeader";
 import QualifiedTeamsCard from "@/components/admin/playoffs/QualifiedTeamsCard";
+import PlayoffSizeEditor from "@/components/admin/playoffs/PlayoffSizeEditor";
 
 export const metadata: Metadata = {
   title: "Playoffs",
@@ -58,13 +60,14 @@ export default async function PlayoffsPage() {
           teams and assign each team a playoff seed.
         </p>
 
-        <div className="mt-4 inline-flex rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-slate-300">
-          Playoff Size:
-          <span className="ml-1 text-amber-400">
-            {tournament.playoffSize} Teams
-          </span>
-        </div>
+        <PlayoffSizeEditor
+          currentSize={
+            tournament.playoffSize
+          }
+        />
       </div>
+
+      <ClearAllQualifiersButton />
 
       <QualifiedTeamsCard
         teams={playoffTeams}

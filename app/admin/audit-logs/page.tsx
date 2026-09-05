@@ -1,57 +1,57 @@
 import type { Metadata } from "next";
 
-import {
-  getAuditLogs,
-  getAuditStatistics,
-} from "@/actions/audit-logs";
+import { getRecentActivities, getAuditLog } from "@/actions/admin";
 
-import PageHeader from "@/components/admin/shared/PageHeader";
-import AuditOverviewCard from "@/components/admin/audit-logs/AuditOverviewCard";
-import AuditFilters from "@/components/admin/audit-logs/AuditFilters";
-import AuditLogsTable from "@/components/admin/audit-logs/AuditLogsTable";
+import ActivityFeed from "@/components/admin/activity/ActivityFeed";
+import SecurityAuditLog from "@/components/admin/activity/SecurityAuditLog";
 
 export const metadata: Metadata = {
-  title: "Audit Logs",
+  title: "Activity",
 };
 
-export const revalidate = 15;
+export const revalidate = 0;
 
 export default async function AuditLogsPage() {
-  const [
-    logs,
-    statistics,
-  ] = await Promise.all([
-    getAuditLogs(),
-    getAuditStatistics(),
+  const [activities, auditEntries] = await Promise.all([
+    getRecentActivities(30),
+    getAuditLog(30),
   ]);
 
   return (
-    <div className="space-y-8">
+    <main className="space-y-10 p-6 lg:p-10">
+      <div>
+        <p className="text-xs font-black uppercase tracking-[0.3em] text-amber-400">
+          Super Admin
+        </p>
 
-      <PageHeader
-        title="Audit Logs"
-        description="Track every important action performed in the Elite Battlegrounds dashboard."
-        breadcrumbs={[
-          {
-            label: "Dashboard",
-            href: "/admin",
-          },
-          {
-            label: "Audit Logs",
-          },
-        ]}
-      />
+        <h1 className="mt-2 text-3xl font-black text-white">
+          Activity
+        </h1>
 
-      <AuditOverviewCard
-        statistics={statistics}
-      />
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
+          Two views: real logged security events below (login attempts, new-device alerts), and a derived feed of business activity (registrations, matches, tournament updates) further down.
+        </p>
+      </div>
 
-      <AuditFilters />
+      <section>
+        <h2 className="mb-4 text-xs font-black uppercase tracking-[0.25em] text-slate-500">
+          Security &amp; Login Activity
+        </h2>
 
-      <AuditLogsTable
-        logs={logs}
-      />
+        <SecurityAuditLog
+          entries={auditEntries}
+        />
+      </section>
 
-    </div>
+      <section>
+        <h2 className="mb-4 text-xs font-black uppercase tracking-[0.25em] text-slate-500">
+          Recent Business Activity
+        </h2>
+
+        <ActivityFeed
+          activities={activities}
+        />
+      </section>
+    </main>
   );
 }

@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
-import { loginSchema, type LoginInput } from "@/lib/validations/auth";
+import { loginSchema, type LoginInput } from "@/src/lib/validations/auth";
 
 export default function LoginPage() {
   const router = useRouter();

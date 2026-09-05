@@ -44,27 +44,41 @@ export default async function StandingsPage() {
         tournament={tournament}
       />
 
-      <GroupTabs
-        groups={standings.groups}
-        defaultGroup={standings.defaultGroup}
-      />
+      <section className="bg-white pb-16 pt-10">
+        <div className="container mx-auto max-w-7xl px-6">
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_340px] lg:items-start">
+            <div>
+              <GroupTabs
+                groups={standings.groups}
+                defaultGroup={
+                  standings.defaultGroup
+                }
+              />
 
-      <StandingsTable
-        standings={standings}
-      />
+              <StandingsTable
+                standings={standings}
+              />
+            </div>
 
-      <TournamentStatisticsSection
-        statistics={statistics}
-      />
+            <PlayoffQualifiersSection
+              qualifiers={qualifiers}
+              playoffSize={
+                tournament.playoffSize
+              }
+            />
+          </div>
 
-      <RecentResultsSection
-        matches={recentResults}
-      />
+          <div className="mt-10 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_420px]">
+            <TournamentStatisticsSection
+              statistics={statistics}
+            />
 
-      <PlayoffQualifiersSection
-        qualifiers={qualifiers}
-        playoffSize={tournament.playoffSize}
-      />
+            <RecentResultsSection
+              matches={recentResults}
+            />
+          </div>
+        </div>
+      </section>
     </>
   );
 }

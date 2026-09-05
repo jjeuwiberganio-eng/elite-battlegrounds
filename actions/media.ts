@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { v2 as cloudinary } from "cloudinary";
 
 import { prisma } from "@/lib/prisma";
@@ -21,6 +22,9 @@ const ALLOWED_MIME_TYPES = [
   "image/png",
   "image/webp",
   "image/gif",
+  "video/mp4",
+  "video/webm",
+  "video/quicktime",
 ];
 
 export async function getMediaLibrary() {
@@ -150,6 +154,119 @@ export async function uploadMedia(file: File) {
       uploadedById: user.id,
     },
   });
+
+  return {
+    id: media.id,
+    url: media.url,
+    fileName: media.originalFileName,
+  };
+}
+
+/*
+|--------------------------------------------------------------------------
+| Direct-to-Cloudinary Upload
+|--------------------------------------------------------------------------
+| uploadMedia() above routes the full file through this Next.js
+| server (browser -> this server -> Cloudinary), which is slow for
+| anything but tiny images, especially on a constrained dev machine.
+|
+| This pair instead lets the browser upload the file BYTES directly
+| to Cloudinary (browser -> Cloudinary, one hop) using a short-lived
+| signature this server generates. Only the small JSON result comes
+| back through this server afterward to save the DB record - never
+| the file itself. getUploadSignature() never sees or touches the
+| file; it just proves the upload is authorized.
+*/
+
+export async function getUploadSignature() {
+  await requireRole(SUPER_ADMIN);
+
+  const cloudName =
+    process.env.CLOUDINARY_CLOUD_NAME;
+
+  const apiKey =
+    process.env.CLOUDINARY_API_KEY;
+
+  if (!cloudName || !apiKey) {
+    throw new Error(
+      "Cloudinary is not configured.",
+    );
+  }
+
+  const timestamp = Math.round(
+    Date.now() / 1000,
+  );
+
+  const folder =
+    "elite-battlegrounds/media";
+
+  const signature =
+    cloudinary.utils.api_sign_request(
+      {
+        timestamp,
+        folder,
+      },
+      process.env
+        .CLOUDINARY_API_SECRET as string,
+    );
+
+  return {
+    cloudName,
+    apiKey,
+    timestamp,
+    folder,
+    signature,
+  };
+}
+
+export async function saveUploadedMedia(data: {
+  secureUrl: string;
+  publicId: string;
+  bytes: number;
+  width?: number;
+  height?: number;
+  format?: string;
+  originalFileName: string;
+  mimeType: string;
+}) {
+  const user = await requireRole(SUPER_ADMIN);
+
+  if (!data.secureUrl || !data.publicId) {
+    throw new Error(
+      "Missing upload result from Cloudinary.",
+    );
+  }
+
+  if (
+    !ALLOWED_MIME_TYPES.includes(
+      data.mimeType,
+    )
+  ) {
+    throw new Error(
+      "Unsupported file type. Use JPG, PNG, WEBP, GIF for images, or MP4, WEBM, MOV for videos.",
+    );
+  }
+
+  const extension = data.format ?? "jpg";
+
+  const media = await prisma.media.create({
+    data: {
+      fileName: `${data.publicId}.${extension}`,
+      originalFileName:
+        data.originalFileName,
+      mimeType: data.mimeType,
+      extension,
+      path: data.publicId,
+      url: data.secureUrl,
+      type: "IMAGE",
+      size: BigInt(data.bytes),
+      width: data.width ?? null,
+      height: data.height ?? null,
+      uploadedById: user.id,
+    },
+  });
+
+  revalidatePath("/admin/media");
 
   return {
     id: media.id,

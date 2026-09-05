@@ -1,4 +1,10 @@
-export { default } from "next-auth/middleware";
+import authMiddleware from "next-auth/middleware";
+
+export default function middleware(
+  ...args: Parameters<typeof authMiddleware>
+) {
+  return authMiddleware(...args);
+}
 
 export const config = {
   matcher: [

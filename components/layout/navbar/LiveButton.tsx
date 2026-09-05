@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { getLiveStatus } from "@/actions/home";
+import { getLiveStatus } from "@/actions/livestream";
 
 export default async function LiveButton() {
   const live = await getLiveStatus();

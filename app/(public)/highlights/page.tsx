@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { getHomepageHighlights } from "@/actions/home";
+import { getHomepageHighlights } from "@/actions/highlights";
 import HighlightCard from "@/components/home/highlights/HighlightCard";
 
 export const metadata: Metadata = {
@@ -28,6 +28,7 @@ export default async function HighlightsPage() {
     description: item.title,
     mediaUrl: item.image,
     mediaType: "image" as const,
+    url: item.url,
     featured: false,
     publishedAt: new Date().toISOString(),
   }));
@@ -38,6 +39,7 @@ export default async function HighlightsPage() {
     description: item.title,
     mediaUrl: item.image,
     mediaType: "video" as const,
+    url: item.url,
     featured: false,
     publishedAt: new Date().toISOString(),
   }));

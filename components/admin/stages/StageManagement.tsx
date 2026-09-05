@@ -13,6 +13,7 @@ import {
 import StageForm, {
   type StageFormValues,
 } from "./StageForm";
+import GroupManagement from "./GroupManagement";
 
 interface StageItem {
   id: string;
@@ -78,6 +79,11 @@ export default function StageManagement({
     useState<string | null>(
       null,
     );
+
+  const [
+    openGroupsForStageId,
+    setOpenGroupsForStageId,
+  ] = useState<string | null>(null);
 
   function clearMessages() {
     setMessage(null);
@@ -520,6 +526,27 @@ const formDefaults:
                           loading
                         }
                         onClick={() =>
+                          setOpenGroupsForStageId(
+                            openGroupsForStageId ===
+                              stage.id
+                              ? null
+                              : stage.id,
+                          )
+                        }
+                        className="rounded-xl border border-amber-500/30 px-4 py-2 text-sm font-bold text-amber-400 transition hover:bg-amber-500/10 disabled:opacity-50"
+                      >
+                        {openGroupsForStageId ===
+                        stage.id
+                          ? "Hide Groups"
+                          : "Manage Groups"}
+                      </button>
+
+                      <button
+                        type="button"
+                        disabled={
+                          loading
+                        }
+                        onClick={() =>
                           openEditForm(
                             stage,
                           )
@@ -545,6 +572,20 @@ const formDefaults:
                       </button>
                     </div>
                   </div>
+
+                  {openGroupsForStageId ===
+                    stage.id && (
+                    <div className="mt-6">
+                      <GroupManagement
+                        stageId={
+                          stage.id
+                        }
+                        stageName={
+                          stage.name
+                        }
+                      />
+                    </div>
+                  )}
                 </article>
               ),
             )}

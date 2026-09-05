@@ -39,6 +39,17 @@ model Session {
   @@map("sessions")
 }
 
+model LoginAttempt {
+  id          String    @id @default(uuid())
+  identifier  String    @unique @db.VarChar(255)
+  attempts    Int       @default(0)
+  lockedUntil DateTime?
+  updatedAt   DateTime  @updatedAt
+
+  @@index([identifier])
+  @@map("login_attempts")
+}
+
 model VerificationToken {
   identifier String
   token      String   @unique
@@ -76,6 +87,7 @@ model User {
   createdMatchEvents      MatchEvent[]
   refereeMatches          Match[]
   uploadedMedia           Media[]
+  createdHighlights       Highlight[]
   notifications           Notification[]
   assignedRolePermissions RolePermission[]         @relation("AssignedRolePermissions")
   createdRuleCategories   RuleCategory[]
@@ -117,6 +129,7 @@ model Media {
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
   announcementMedia Announcement[]
+  highlights        Highlight[]
   uploadedBy        User           @relation(fields: [uploadedById], references: [id])
   sponsorLogos      Sponsor[]
   teamLogos         Team[]         @relation("TeamLogo")
@@ -787,6 +800,7 @@ enum PlayerRole {
   MID
   GOLD
   ROAM
+  FLEX
   SUBSTITUTE
 }
 
@@ -822,6 +836,30 @@ enum MediaType {
   IMAGE
   VIDEO
   DOCUMENT
+}
+
+enum HighlightType {
+  POSTER
+  VIDEO
+}
+
+model Highlight {
+  id           String        @id @default(uuid())
+  title        String        @db.VarChar(100)
+  type         HighlightType
+  mediaId      String
+  featured     Boolean       @default(false)
+  displayOrder Int
+  createdById  String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  media     Media @relation(fields: [mediaId], references: [id])
+  createdBy User  @relation(fields: [createdById], references: [id])
+
+  @@index([type])
+  @@index([displayOrder])
+  @@map("highlights")
 }
 
 enum PublicationStatus {

@@ -4,7 +4,7 @@ import { CalendarDays, Home, Info, Trophy } from "lucide-react";
 const navigationItems = [
   { href: "/", label: "Home", icon: Home },
   { href: "/schedule", label: "Schedule", icon: CalendarDays },
-  { href: "/standing", label: "Standing", icon: Trophy },
+  { href: "/standings", label: "Standing", icon: Trophy },
   { href: "/about", label: "About", icon: Info },
 ];
 

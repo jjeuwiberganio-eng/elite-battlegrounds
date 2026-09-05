@@ -1,63 +1,37 @@
 import type { Metadata } from "next";
 
-import {
-  getLivestreamSettings,
-  getLivestreamHistory,
-} from "@/actions/livestream";
+import { getLivestreamCandidates } from "@/actions/livestream";
 
-import PageHeader from "@/components/admin/shared/PageHeader";
-import LivestreamControlCard from "@/components/admin/livestream/LivestreamControlCard";
-import LivestreamPreviewCard from "@/components/admin/livestream/LivestreamPreviewCard";
-import LivestreamHistoryTable from "@/components/admin/livestream/LivestreamHistoryTable";
+import LivestreamManagement from "@/components/admin/livestream/LivestreamManagement";
 
 export const metadata: Metadata = {
   title: "Livestream",
 };
 
-export const revalidate = 15;
+export const revalidate = 0;
 
 export default async function LivestreamPage() {
-  const [
-    livestream,
-    history,
-  ] = await Promise.all([
-    getLivestreamSettings(),
-    getLivestreamHistory(),
-  ]);
+  const candidates = await getLivestreamCandidates();
 
   return (
-    <div className="space-y-8">
+    <main className="space-y-6 p-6 lg:p-10">
+      <div>
+        <p className="text-xs font-black uppercase tracking-[0.3em] text-amber-400">
+          Super Admin
+        </p>
 
-      <PageHeader
-        title="Livestream"
-        description="Control the LIVE button and tournament livestream shown on the public website."
-        breadcrumbs={[
-          {
-            label: "Dashboard",
-            href: "/admin",
-          },
-          {
-            label: "Livestream",
-          },
-        ]}
-      />
+        <h1 className="mt-2 text-3xl font-black text-white">
+          Livestream
+        </h1>
 
-      <div className="grid gap-6 xl:grid-cols-2">
-
-        <LivestreamControlCard
-          livestream={livestream}
-        />
-
-        <LivestreamPreviewCard
-          livestream={livestream}
-        />
-
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
+          Control which match shows as live across the site - the navbar's LIVE NOW button reads directly from this.
+        </p>
       </div>
 
-      <LivestreamHistoryTable
-        history={history}
+      <LivestreamManagement
+        candidates={candidates}
       />
-
-    </div>
+    </main>
   );
 }

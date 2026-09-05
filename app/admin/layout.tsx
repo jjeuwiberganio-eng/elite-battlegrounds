@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
+import AuthSessionProvider from "@/components/admin/shared/AuthSessionProvider";
+import AdminTopBar from "@/components/admin/shared/AdminTopBar";
+
 export const metadata: Metadata = {
   title: {
     default: "Elite Battlegrounds Admin",
@@ -18,8 +21,11 @@ export default function AdminLayout({
   children,
 }: AdminLayoutProps) {
   return (
-    <div className="min-h-screen bg-slate-950">
-      {children}
-    </div>
+    <AuthSessionProvider>
+      <div className="min-h-screen bg-slate-950">
+        <AdminTopBar />
+        {children}
+      </div>
+    </AuthSessionProvider>
   );
 }

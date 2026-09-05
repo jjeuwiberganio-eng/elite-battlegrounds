@@ -1,141 +1,249 @@
 import type { Metadata } from "next";
-
 import {
-  getTeams,
-  getTournamentControl,
-} from "@/actions/teams";
+  Layers,
+  Users,
+  CalendarDays,
+  Trophy,
+  Sparkles,
+  ClipboardList,
+  ChevronDown,
+} from "lucide-react";
 
-import TeamsManagement from "@/components/admin/teams/TeamsManagement";
+import AdminNavRow from "@/components/admin/dashboard/AdminNavRow";
 
 export const metadata: Metadata = {
-  title: "Team Management",
+  title: "Dashboard",
   description:
-    "Create and manage Elite Battlegrounds Series tournament teams.",
+    "Elite Battlegrounds Series administration dashboard.",
 };
 
-export const dynamic = "force-dynamic";
+interface NavItem {
+  href: string;
+  label: string;
+  description: string;
+  ready: boolean;
+}
 
-export default async function TeamsPage() {
-  const [
-    teams,
-    tournament,
-  ] = await Promise.all([
-    getTeams(),
-    getTournamentControl(),
-  ]);
+interface NavGroup {
+  title: string;
+  icon: typeof Layers;
+  defaultOpen: boolean;
+  items: NavItem[];
+}
 
-  /*
-   * The Team Management UI uses the four
-   * tournament groups we established for
-   * the Group Stage.
-   *
-   * The backend still verifies that these
-   * groups actually exist before saving.
-   */
-  const groups = [
-    "Group A",
-    "Group B",
-    "Group C",
-    "Group D",
-  ];
+/*
+ * `ready` reflects whether the page actually compiles today - not
+ * a permanent label. Flip to true here as broken routes get built.
+ *
+ * One icon per GROUP (not per item) and a native <details> element
+ * per group - this keeps module/DOM weight down on constrained dev
+ * machines. Rows use prefetch={false} to avoid triggering a
+ * simultaneous background compile of every linked page at once.
+ */
+const navGroups: NavGroup[] = [
+  {
+    title: "Tournament Setup",
+    icon: Layers,
+    defaultOpen: true,
+    items: [
+      {
+        href: "/admin/tournament/stages",
+        label: "Tournament Stages",
+        description:
+          "Create Group Stage / Playoffs and set max teams per stage.",
+        ready: true,
+      },
+      {
+        href: "/admin/settings",
+        label: "Website Settings",
+        description:
+          "Site-wide settings, socials, and footer content.",
+        ready: true,
+      },
+    ],
+  },
+  {
+    title: "Teams & Standings",
+    icon: Users,
+    defaultOpen: true,
+    items: [
+      {
+        href: "/admin/teams",
+        label: "Team Management",
+        description:
+          "Create teams, assign groups, manage rosters.",
+        ready: true,
+      },
+      {
+        href: "/admin/standings",
+        label: "Standings",
+        description:
+          "Review group standings and recalculate rankings.",
+        ready: true,
+      },
+    ],
+  },
+  {
+    title: "Schedule & Matches",
+    icon: CalendarDays,
+    defaultOpen: false,
+    items: [
+      {
+        href: "/admin/schedule/days",
+        label: "Schedule Days",
+        description:
+          "Add and manage Group Stage schedule days.",
+        ready: true,
+      },
+      {
+        href: "/admin/matches",
+        label: "Matches",
+        description:
+          "Create matches and record final results.",
+        ready: true,
+      },
+    ],
+  },
+  {
+    title: "Playoffs",
+    icon: Trophy,
+    defaultOpen: false,
+    items: [
+      {
+        href: "/admin/playoffs",
+        label: "Playoff Qualifiers",
+        description:
+          "Pick qualifying teams and set playoff size.",
+        ready: true,
+      },
+      {
+        href: "/admin/playoffs/bracket",
+        label: "Playoff Bracket",
+        description:
+          "Manually control the bracket - slots, winners, scores.",
+        ready: true,
+      },
+    ],
+  },
+  {
+    title: "Content",
+    icon: Sparkles,
+    defaultOpen: false,
+    items: [
+      {
+        href: "/admin/announcements",
+        label: "Announcements",
+        description:
+          "Manage the site-wide announcement bar.",
+        ready: true,
+      },
+      {
+        href: "/admin/highlights",
+        label: "Highlights",
+        description:
+          "Manage homepage poster/video highlights.",
+        ready: true,
+      },
+      {
+        href: "/admin/livestream",
+        label: "Livestream",
+        description:
+          "Control which match is live across the site.",
+        ready: true,
+      },
+      {
+        href: "/admin/media",
+        label: "Media Library",
+        description:
+          "Upload and manage logos, posters, and images.",
+        ready: true,
+      },
+    ],
+  },
+  {
+    title: "System",
+    icon: ClipboardList,
+    defaultOpen: false,
+    items: [
+      {
+        href: "/admin/audit-logs",
+        label: "Recent Activity",
+        description:
+          "A live feed derived from real records - not a formal audit trail yet.",
+        ready: true,
+      },
+    ],
+  },
+];
 
+export default function AdminDashboardPage() {
   return (
-    <main className="space-y-8">
-      {/* Page Header */}
-
+    <main className="mx-auto max-w-4xl space-y-6 p-6 lg:p-10">
       <div>
         <p className="text-xs font-black uppercase tracking-[0.3em] text-amber-400">
           Super Admin
         </p>
 
         <h1 className="mt-2 text-3xl font-black text-white">
-          Team Management
+          Dashboard
         </h1>
 
         <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
-          Create and manage tournament teams,
-          assign their group, and manage their
-          six-player roster.
+          Everything you can manage for Elite
+          Battlegrounds Series. Sections
+          marked{" "}
+          <span className="text-slate-500">
+            Not Ready
+          </span>{" "}
+          aren't wired up yet.
         </p>
-
-        {tournament && (
-          <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-300">
-            <span>
-              Tournament:
-            </span>
-
-            <span className="text-amber-400">
-              {tournament.name}
-            </span>
-          </div>
-        )}
       </div>
 
-      {/* Tournament unavailable */}
+      <div className="space-y-3">
+        {navGroups.map((group) => {
+          const Icon = group.icon;
 
-      {!tournament ? (
-        <section className="rounded-3xl border border-amber-500/20 bg-amber-500/5 p-8">
-          <p className="text-xs font-black uppercase tracking-[0.25em] text-amber-400">
-            Tournament Setup
-          </p>
+          return (
+            <details
+              key={group.title}
+              open={group.defaultOpen}
+              className="group/details overflow-hidden rounded-2xl border border-white/10 bg-slate-900"
+            >
+              <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 select-none">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-400">
+                    <Icon className="h-4 w-4" />
+                  </div>
 
-          <h2 className="mt-3 text-2xl font-black text-white">
-            No tournament found
-          </h2>
+                  <span className="text-sm font-black uppercase tracking-wide text-white">
+                    {group.title}
+                  </span>
 
-          <p className="mt-2 max-w-xl text-sm leading-6 text-slate-400">
-            A tournament must exist before
-            teams can be registered and assigned
-            to a group.
-          </p>
-        </section>
-      ) : !tournament.groupStage ? (
-        /*
-         * This is important.
-         *
-         * We don't allow the admin to create
-         * fake Group A/B/C/D records from the
-         * Team page. The Group Stage and its
-         * actual groups must exist first.
-         */
-        <section className="rounded-3xl border border-amber-500/20 bg-amber-500/5 p-8">
-          <p className="text-xs font-black uppercase tracking-[0.25em] text-amber-400">
-            Group Stage Required
-          </p>
+                  <span className="text-xs text-slate-500">
+                    ({group.items.length})
+                  </span>
+                </div>
 
-          <h2 className="mt-3 text-2xl font-black text-white">
-            Group Stage has not been configured
-          </h2>
+                <ChevronDown className="h-4 w-4 text-slate-500 transition group-open/details:rotate-180" />
+              </summary>
 
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
-            Create the Group Stage and its four
-            groups before assigning teams to
-            Group A, Group B, Group C, or Group D.
-          </p>
-
-          <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {groups.map((group) => (
-              <div
-                key={group}
-                className="rounded-2xl border border-white/10 bg-slate-950 px-4 py-4 text-center"
-              >
-                <p className="text-sm font-black text-white">
-                  {group}
-                </p>
-
-                <p className="mt-1 text-xs text-slate-600">
-                  Not configured
-                </p>
+              <div className="divide-y divide-white/5 border-t border-white/5">
+                {group.items.map((item) => (
+                  <AdminNavRow
+                    key={item.href}
+                    href={item.href}
+                    label={item.label}
+                    description={
+                      item.description
+                    }
+                    ready={item.ready}
+                  />
+                ))}
               </div>
-            ))}
-          </div>
-        </section>
-      ) : (
-        <TeamsManagement
-          initialTeams={teams}
-          groups={groups}
-        />
-      )}
+            </details>
+          );
+        })}
+      </div>
     </main>
   );
 }

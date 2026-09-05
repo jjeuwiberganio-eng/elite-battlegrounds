@@ -1,60 +1,12 @@
-import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 
-import {
-  getTournamentControl,
-  getTournamentStatistics,
-} from "@/actions/tournament-control";
-
-import TournamentOverviewCard from "@/components/admin/tournament-control/TournamentOverviewCard";
-import TournamentSettingsCard from "@/components/admin/tournament-control/TournamentSettingsCard";
-import TournamentPhaseCard from "@/components/admin/tournament-control/TournamentPhaseCard";
-import SchedulePublishingCard from "@/components/admin/tournament-control/SchedulePublishingCard";
-import LivestreamControlCard from "@/components/admin/tournament-control/LivestreamControlCard";
-import TournamentStatisticsCard from "@/components/admin/tournament-control/TournamentStatisticsCard";
-
-export const metadata: Metadata = {
-  title: "Tournament Control",
-};
-
-export const revalidate = 30;
-
-export default async function TournamentControlPage() {
-  const [tournament, statistics] = await Promise.all([
-    getTournamentControl(),
-    getTournamentStatistics(),
-  ]);
-
-  return (
-    <div className="space-y-8">
-
-      <TournamentOverviewCard
-        tournament={tournament}
-      />
-
-      <div className="grid gap-6 xl:grid-cols-2">
-
-        <TournamentSettingsCard
-          tournament={tournament}
-        />
-
-        <PlayoffSettingsCard
-          tournament={tournament}
-        />
-
-        <SchedulePublishingCard
-          tournament={tournament}
-        />
-
-        <LivestreamControlCard
-          tournament={tournament}
-        />
-
-        <TournamentStatisticsCard
-          statistics={statistics}
-        />
-
-      </div>
-
-    </div>
-  );
+/*
+ * This page was scaffolded to duplicate settings that now live in
+ * clearer, more focused places: Tournament Stages (stage/group
+ * config), Website Settings (site info), Standings (recalculation),
+ * and Livestream (live match control). Redirecting rather than
+ * maintaining a redundant hub.
+ */
+export default function TournamentControlPage() {
+  redirect("/admin");
 }

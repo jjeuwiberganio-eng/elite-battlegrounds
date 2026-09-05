@@ -12,6 +12,7 @@ import MatchForm, {
 } from "@/components/admin/matches/MatchForm";
 
 import AddScheduleDayButton from "@/components/schedule/AddScheduleDayButton";
+import RecordResultForm from "@/components/admin/matches/RecordResultForm";
 
 interface TeamOption {
   id: string;
@@ -36,6 +37,10 @@ interface ScheduleDayOption {
 interface MatchParticipant {
   side: string;
 
+  score: number;
+
+  isWinner: boolean;
+
   tournamentRegistration: {
     team: {
       id: string;
@@ -59,6 +64,8 @@ interface AdminMatch {
   streamUrl: string | null;
 
   status: string;
+
+  winner: string | null;
 
   tournamentStage: {
     id: string;
@@ -434,7 +441,37 @@ export default function MatchManagement({
                     </div>
 
                     {/* RIGHT */}
-                    <div className="flex items-start lg:justify-end">
+                    <div className="flex flex-col items-start gap-3 lg:items-end">
+                      {teamA && teamB && (
+                        <RecordResultForm
+                          matchId={
+                            match.id
+                          }
+                          teamAName={
+                            teamAName
+                          }
+                          teamBName={
+                            teamBName
+                          }
+                          initialScoreA={
+                            teamA.score
+                          }
+                          initialScoreB={
+                            teamB.score
+                          }
+                          isCompleted={
+                            match.status ===
+                            "COMPLETED"
+                          }
+                          winnerSide={
+                            match.winner as
+                              | "TEAM_A"
+                              | "TEAM_B"
+                              | null
+                          }
+                        />
+                      )}
+
                       <button
                         type="button"
                         disabled={loading}

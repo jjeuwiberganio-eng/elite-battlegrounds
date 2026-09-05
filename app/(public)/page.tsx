@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 
 import {
   getHomepageData,
-  getHomepageHighlights,
   getHomepageRules,
 } from "@/actions/home";
+import { getHomepageHighlights } from "@/actions/highlights";
 import { getGroupStageMatches } from "@/actions/group-stage";
 import { getPublicRegistrationSettings } from "@/actions/registration";
 
@@ -108,6 +108,7 @@ export default async function HomePage() {
             description: item.title,
             mediaUrl: item.image,
             mediaType: "image" as const,
+            url: item.url,
             featured: false,
             publishedAt: new Date().toISOString(),
           }))}
@@ -119,6 +120,7 @@ export default async function HomePage() {
             description: item.title,
             mediaUrl: item.image,
             mediaType: "video" as const,
+            url: item.url,
             featured: false,
             publishedAt: new Date().toISOString(),
           }))}

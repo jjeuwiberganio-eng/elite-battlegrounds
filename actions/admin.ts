@@ -109,6 +109,54 @@ export async function getAdminDashboardOverview(): Promise<AdminDashboardOvervie
 }
 
 /**
+ * Real Audit Log
+ *
+ * Unlike getRecentActivities() below (which is derived from
+ * existing business records), this reads the actual ActivityLog
+ * table - populated by login attempts, new-device alerts, and any
+ * other code that calls logActivity() from src/auth/auth-security.ts.
+ */
+export interface AuditLogEntry {
+  id: string;
+  action: string;
+  entity: string;
+  description: string;
+  ipAddress: string | null;
+  userAgent: string | null;
+  actorEmail: string | null;
+  createdAt: Date;
+}
+
+export async function getAuditLog(
+  limit = 30,
+): Promise<AuditLogEntry[]> {
+  const entries = await prisma.activityLog.findMany({
+    take: limit,
+    orderBy: {
+      createdAt: "desc",
+    },
+    include: {
+      user: {
+        select: {
+          email: true,
+        },
+      },
+    },
+  });
+
+  return entries.map((entry) => ({
+    id: entry.id,
+    action: entry.action,
+    entity: entry.entity,
+    description: entry.description,
+    ipAddress: entry.ipAddress,
+    userAgent: entry.userAgent,
+    actorEmail: entry.user?.email ?? null,
+    createdAt: entry.createdAt,
+  }));
+}
+
+/**
  * Recent Dashboard Activity
  *
  * There is no AuditLog model in the current Prisma schema,

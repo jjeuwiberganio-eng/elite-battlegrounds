@@ -41,6 +41,10 @@ const PLAYER_ROLES = [
     label: "Roamer",
   },
   {
+    value: "FLEX",
+    label: "Flex",
+  },
+  {
     value: "SUBSTITUTE",
     label: "Substitute",
   },

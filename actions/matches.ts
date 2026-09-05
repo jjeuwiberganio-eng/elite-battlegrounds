@@ -352,3 +352,201 @@ export async function deleteMatch(
     success: true,
   };
 }
+
+/*
+|--------------------------------------------------------------------------
+| Record / Reset Match Result
+|--------------------------------------------------------------------------
+| This is the one place that decides who won a match. Nothing in the
+| schedule/bracket admin infers a winner automatically - the Super
+| Admin enters the final score for each side here, and this writes
+| MatchParticipant.score/isWinner + Match.status/winner/completedAt.
+| Standings recalculation and the playoff bracket both read from
+| these fields, so this action is the upstream source of truth for
+| both.
+*/
+
+export async function recordMatchResult(data: {
+  matchId: string;
+  scoreA: number;
+  scoreB: number;
+}) {
+  await requireRole(USER_ROLES.SUPER_ADMIN);
+
+  if (!data.matchId) {
+    throw new Error("Match ID is required.");
+  }
+
+  if (
+    !Number.isInteger(data.scoreA) ||
+    !Number.isInteger(data.scoreB) ||
+    data.scoreA < 0 ||
+    data.scoreB < 0
+  ) {
+    throw new Error(
+      "Scores must be whole numbers of 0 or more.",
+    );
+  }
+
+  if (data.scoreA === data.scoreB) {
+    throw new Error(
+      "Scores can't be tied - there has to be a winner.",
+    );
+  }
+
+  const match = await prisma.match.findUnique({
+    where: {
+      id: data.matchId,
+    },
+
+    include: {
+      participants: true,
+    },
+  });
+
+  if (!match) {
+    throw new Error("Match not found.");
+  }
+
+  const participantA =
+    match.participants.find(
+      (participant) =>
+        participant.side === "TEAM_A",
+    );
+
+  const participantB =
+    match.participants.find(
+      (participant) =>
+        participant.side === "TEAM_B",
+    );
+
+  if (!participantA || !participantB) {
+    throw new Error(
+      "Both teams must be assigned to this match before recording a result.",
+    );
+  }
+
+  const winnerSide =
+    data.scoreA > data.scoreB
+      ? "TEAM_A"
+      : "TEAM_B";
+
+  await prisma.$transaction([
+    prisma.matchParticipant.update({
+      where: {
+        matchId_tournamentRegistrationId: {
+          matchId: match.id,
+          tournamentRegistrationId:
+            participantA.tournamentRegistrationId,
+        },
+      },
+      data: {
+        score: data.scoreA,
+        isWinner: winnerSide === "TEAM_A",
+      },
+    }),
+
+    prisma.matchParticipant.update({
+      where: {
+        matchId_tournamentRegistrationId: {
+          matchId: match.id,
+          tournamentRegistrationId:
+            participantB.tournamentRegistrationId,
+        },
+      },
+      data: {
+        score: data.scoreB,
+        isWinner: winnerSide === "TEAM_B",
+      },
+    }),
+
+    prisma.match.update({
+      where: {
+        id: match.id,
+      },
+      data: {
+        status: "COMPLETED",
+        winner: winnerSide,
+        completedAt: new Date(),
+      },
+    }),
+  ]);
+
+  revalidatePath("/admin/matches");
+  revalidatePath("/admin/schedule/matches");
+  revalidatePath("/admin/standings");
+  revalidatePath("/standings");
+  revalidatePath("/schedule");
+  revalidatePath("/");
+
+  return {
+    success: true,
+    message: "Match result recorded.",
+  };
+}
+
+export async function resetMatchResult(
+  matchId: string,
+) {
+  await requireRole(USER_ROLES.SUPER_ADMIN);
+
+  if (!matchId) {
+    throw new Error("Match ID is required.");
+  }
+
+  const match = await prisma.match.findUnique({
+    where: {
+      id: matchId,
+    },
+
+    include: {
+      participants: true,
+    },
+  });
+
+  if (!match) {
+    throw new Error("Match not found.");
+  }
+
+  await prisma.$transaction([
+    ...match.participants.map(
+      (participant) =>
+        prisma.matchParticipant.update({
+          where: {
+            matchId_tournamentRegistrationId: {
+              matchId: match.id,
+              tournamentRegistrationId:
+                participant.tournamentRegistrationId,
+            },
+          },
+          data: {
+            score: 0,
+            isWinner: false,
+          },
+        }),
+    ),
+
+    prisma.match.update({
+      where: {
+        id: match.id,
+      },
+      data: {
+        status: "READY",
+        winner: null,
+        completedAt: null,
+      },
+    }),
+  ]);
+
+  revalidatePath("/admin/matches");
+  revalidatePath("/admin/schedule/matches");
+  revalidatePath("/admin/standings");
+  revalidatePath("/standings");
+  revalidatePath("/schedule");
+  revalidatePath("/");
+
+  return {
+    success: true,
+    message: "Match result reset.",
+  };
+}

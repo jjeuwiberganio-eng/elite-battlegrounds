@@ -297,11 +297,109 @@ export async function getTournamentControl() {
 
   const tournament = await getCurrentTournament();
 
+  const playoffStage =
+    await prisma.tournamentStage.findFirst({
+      where: {
+        tournamentId: tournament.id,
+        type: {
+          in: [
+            "DOUBLE_ELIMINATION",
+            "SINGLE_ELIMINATION",
+            "GRAND_FINAL",
+          ],
+        },
+      },
+      orderBy: {
+        displayOrder: "asc",
+      },
+    });
+
   return {
     id: tournament.id,
+    playoffStageId: playoffStage?.id ?? null,
     name: tournament.name,
     season: "Season 1",
-    playoffSize: 8,
+    playoffSize:
+      playoffStage?.maxTeams ?? 8,
+  };
+}
+
+/**
+ * Update how many teams qualify for the playoffs. This writes
+ * directly to the playoff TournamentStage's maxTeams field - the
+ * same field editable from Tournament Stages - so both places stay
+ * in sync. If shrinking the size would strand already-qualified
+ * teams above the new cap, those teams are removed from the
+ * qualification list rather than left in an invalid seed.
+ */
+export async function updatePlayoffSize(
+  newSize: number,
+) {
+  await requireRole(SUPER_ADMIN);
+
+  if (
+    !Number.isInteger(newSize) ||
+    newSize < 2
+  ) {
+    throw new Error(
+      "Playoff size must be a whole number of at least 2.",
+    );
+  }
+
+  const tournament = await getCurrentTournament();
+
+  const playoffStage =
+    await prisma.tournamentStage.findFirst({
+      where: {
+        tournamentId: tournament.id,
+        type: {
+          in: [
+            "DOUBLE_ELIMINATION",
+            "SINGLE_ELIMINATION",
+            "GRAND_FINAL",
+          ],
+        },
+      },
+      orderBy: {
+        displayOrder: "asc",
+      },
+    });
+
+  if (!playoffStage) {
+    throw new Error(
+      "No playoff stage found for this tournament.",
+    );
+  }
+
+  await prisma.$transaction([
+    prisma.tournamentStage.update({
+      where: {
+        id: playoffStage.id,
+      },
+      data: {
+        maxTeams: newSize,
+      },
+    }),
+
+    prisma.playoffQualification.deleteMany({
+      where: {
+        tournamentId: tournament.id,
+        seed: {
+          gt: newSize,
+        },
+      },
+    }),
+  ]);
+
+  revalidatePath("/admin/playoffs");
+  revalidatePath("/admin/tournament-stages");
+  revalidatePath("/standings");
+  revalidatePath("/schedule");
+  revalidatePath("/");
+
+  return {
+    success: true,
+    message: `Playoff size updated to ${newSize} teams.`,
   };
 }
 

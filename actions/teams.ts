@@ -932,45 +932,102 @@ export async function updateTeam(
       /*
        * Replace the team's player list.
        *
-       * This keeps the maximum of six players
-       * enforced and makes editing predictable.
+       * This diffs against the existing active
+       * roster instead of soft-deleting everyone
+       * and recreating from scratch - the old
+       * approach collided with the unique
+       * (teamId, inGameName) constraint whenever
+       * a player's name was unchanged, since a
+       * soft-deleted row still occupies that
+       * unique slot.
        */
-      await tx.player.updateMany({
-        where: {
-          teamId,
-        },
-
-        data: {
-          deletedAt:
-            new Date(),
-        },
-      });
-
-      await tx.player.createMany({
-        data: data.players.map(
-          (player) => ({
+      const existingPlayers =
+        await tx.player.findMany({
+          where: {
             teamId,
+            deletedAt: null,
+          },
+        });
 
-            inGameName:
-              cleanString(
-                player.inGameName,
+      const incomingPlayers =
+        data.players.map((player) => ({
+          ...player,
+          inGameName: cleanString(
+            player.inGameName,
+          ),
+        }));
+
+      const incomingNames = new Set(
+        incomingPlayers.map(
+          (player) =>
+            player.inGameName,
+        ),
+      );
+
+      const removedPlayerIds =
+        existingPlayers
+          .filter(
+            (existing) =>
+              !incomingNames.has(
+                existing.inGameName,
               ),
+          )
+          .map((existing) => existing.id);
 
-            role:
-              player.role,
+      if (removedPlayerIds.length > 0) {
+        await tx.player.updateMany({
+          where: {
+            id: {
+              in: removedPlayerIds,
+            },
+          },
+          data: {
+            deletedAt: new Date(),
+          },
+        });
+      }
 
-            isCaptain:
-              Boolean(
+      for (const player of incomingPlayers) {
+        const existing =
+          existingPlayers.find(
+            (candidate) =>
+              candidate.inGameName ===
+              player.inGameName,
+          );
+
+        if (existing) {
+          await tx.player.update({
+            where: {
+              id: existing.id,
+            },
+            data: {
+              role: player.role,
+              isCaptain: Boolean(
                 player.isCaptain,
               ),
-
-            isSubstitute:
-              Boolean(
+              isSubstitute: Boolean(
                 player.isSubstitute,
               ),
-          }),
-        ),
-      });
+              deletedAt: null,
+            },
+          });
+        } else {
+          await tx.player.create({
+            data: {
+              teamId,
+              inGameName:
+                player.inGameName,
+              role: player.role,
+              isCaptain: Boolean(
+                player.isCaptain,
+              ),
+              isSubstitute: Boolean(
+                player.isSubstitute,
+              ),
+            },
+          });
+        }
+      }
 
       const registration =
         await tx.tournamentRegistration.findUnique(

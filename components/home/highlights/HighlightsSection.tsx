@@ -7,6 +7,7 @@ interface HighlightItem {
   description: string;
   mediaUrl: string;
   mediaType: "image" | "video";
+  url: string;
   featured: boolean;
   publishedAt: string;
 }

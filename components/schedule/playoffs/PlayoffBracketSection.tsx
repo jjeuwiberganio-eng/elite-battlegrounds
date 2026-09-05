@@ -42,7 +42,11 @@ interface PlayoffBracketSectionProps {
 
 type Side = "upper" | "lower";
 
-const MATCH_WIDTH = 101;
+// Must match MatchCard's rendered width/height below — connectors and
+// headers are derived from these, so if the card size changes, update
+// it here and every connector/header follows automatically.
+const MATCH_WIDTH = 225;
+const MATCH_HEIGHT = 101;
 
 interface Position {
   left: number;
@@ -103,6 +107,24 @@ const LOWER_POSITIONS: Record<number, Position[]> = {
     { left: 1080, top: 295 },
   ],
 };
+
+// Shared layout constants for routing lines from the two bracket finals
+// into the Grand Final panel. BRACKET_HEIGHT/STACK_GAP must mirror the
+// min-h and spacing classes used below (min-h-[640px], mt-6 + border +
+// pt-6 between Upper and Lower brackets).
+const BRACKET_COLUMN_WIDTH = 1320;
+const BRACKET_HEIGHT = 640;
+const BRACKET_STACK_GAP = 49;
+const FINALS_LANE_WIDTH = 90;
+
+const UPPER_FINAL_Y =
+  UPPER_POSITIONS[4][0].top + MATCH_HEIGHT / 2;
+
+const LOWER_FINAL_Y =
+  BRACKET_HEIGHT +
+  BRACKET_STACK_GAP +
+  LOWER_POSITIONS[5][0].top +
+  MATCH_HEIGHT / 2;
 
 function getRoundOrder(
   match: BracketMatch,
@@ -322,10 +344,62 @@ function TeamRow({
   );
 }
 
+/**
+ * Merges the Upper Bracket Final and Lower Bracket Final into a single
+ * line feeding the Grand Final panel. `upperY`/`lowerY` are global
+ * (page-relative) center-Y coordinates of the two finals; `width` is
+ * the lane this connector has to work with, from the end of the
+ * bracket column to the start of the Grand Final panel.
+ */
+function FinalsConnector({
+  upperY,
+  lowerY,
+  width,
+}: {
+  upperY: number;
+  lowerY: number;
+  width: number;
+}) {
+  const midX = width / 2;
+  const midY = (upperY + lowerY) / 2;
+
+  return (
+    <>
+      <div
+        className="pointer-events-none absolute h-px bg-amber-400/75"
+        style={{ left: 0, top: upperY, width: midX }}
+      />
+
+      <div
+        className="pointer-events-none absolute h-px bg-amber-400/75"
+        style={{ left: 0, top: lowerY, width: midX }}
+      />
+
+      <div
+        className="pointer-events-none absolute w-px bg-amber-400/75"
+        style={{
+          left: midX,
+          top: Math.min(upperY, lowerY),
+          height: Math.abs(lowerY - upperY),
+        }}
+      />
+
+      <div
+        className="pointer-events-none absolute h-px bg-amber-400/75"
+        style={{ left: midX, top: midY, width: width - midX }}
+      >
+        <span className="absolute -right-1 -top-[6px] text-xs font-black text-amber-400">
+          ›
+        </span>
+      </div>
+    </>
+  );
+}
+
 function MatchCard({
   match,
   side,
-  width = 225,
+  width = MATCH_WIDTH,
   left,
   top,
 }: {
@@ -433,25 +507,25 @@ function VerticalConnector({
   );
 }
 
+/**
+ * Connects two source match slots (e.g. both winners of a round) into a
+ * single target slot. All coordinates are derived from the Position
+ * objects — pass the actual entries from UPPER_POSITIONS/LOWER_POSITIONS
+ * so the lines always follow the cards, even if those tables change.
+ */
 function PairConnector({
-  sourceLeft,
-  sourceTop1,
-  sourceTop2,
-  targetLeft,
-  targetTop,
+  source,
+  target,
 }: {
-  sourceLeft: number;
-  sourceTop1: number;
-  sourceTop2: number;
-  targetLeft: number;
-  targetTop: number;
+  source: [Position, Position];
+  target: Position;
 }) {
-  const cardHeight = 101;
-  const sourceY1 = sourceTop1 + cardHeight / 2;
-  const sourceY2 = sourceTop2 + cardHeight / 2;
-  const targetY = targetTop + cardHeight / 2;
+  const sourceY1 = source[0].top + MATCH_HEIGHT / 2;
+  const sourceY2 = source[1].top + MATCH_HEIGHT / 2;
+  const targetY = target.top + MATCH_HEIGHT / 2;
 
-  const sourceX = sourceLeft + MATCH_WIDTH;
+  const sourceX = source[0].left + MATCH_WIDTH;
+  const targetLeft = target.left;
   const middleX =
     sourceX + (targetLeft - sourceX) / 2;
 
@@ -479,8 +553,8 @@ function PairConnector({
         className="pointer-events-none absolute w-px bg-amber-400/75"
         style={{
           left: middleX,
-          top: sourceY1,
-          height: sourceY2 - sourceY1,
+          top: Math.min(sourceY1, sourceY2),
+          height: Math.abs(sourceY2 - sourceY1),
         }}
       />
 
@@ -500,6 +574,60 @@ function PairConnector({
   );
 }
 
+/**
+ * Connects a single source match slot to a single target slot (e.g.
+ * Lower Round 2 → Lower Round 3, one-to-one). Handles same-row links
+ * (straight horizontal line) and links that jog up/down between rows.
+ */
+function MatchConnector({
+  source,
+  target,
+}: {
+  source: Position;
+  target: Position;
+}) {
+  const sourceY = source.top + MATCH_HEIGHT / 2;
+  const targetY = target.top + MATCH_HEIGHT / 2;
+
+  const sourceX = source.left + MATCH_WIDTH;
+  const targetLeft = target.left;
+
+  if (sourceY === targetY) {
+    return (
+      <HorizontalConnector
+        left={sourceX}
+        top={sourceY - 0.5}
+        width={targetLeft - sourceX}
+      />
+    );
+  }
+
+  const middleX =
+    sourceX + (targetLeft - sourceX) / 2;
+
+  return (
+    <>
+      <HorizontalConnector
+        left={sourceX}
+        top={sourceY - 0.5}
+        width={middleX - sourceX}
+      />
+
+      <VerticalConnector
+        left={middleX}
+        top={Math.min(sourceY, targetY)}
+        height={Math.abs(targetY - sourceY)}
+      />
+
+      <HorizontalConnector
+        left={middleX}
+        top={targetY - 0.5}
+        width={targetLeft - middleX}
+      />
+    </>
+  );
+}
+
 function UpperBracket({
   matches,
 }: {
@@ -507,11 +635,13 @@ function UpperBracket({
 }) {
   const rounds = groupRounds(matches);
 
+  // Header X positions mirror UPPER_POSITIONS' `left` values so labels
+  // sit directly above their column of cards.
   const roundX: Record<number, number> = {
-    1: 20,
-    2: 285,
-    3: 550,
-    4: 815,
+    1: UPPER_POSITIONS[1][0].left,
+    2: UPPER_POSITIONS[2][0].left,
+    3: UPPER_POSITIONS[3][0].left,
+    4: UPPER_POSITIONS[4][0].left,
   };
 
   return (
@@ -575,47 +705,43 @@ function UpperBracket({
 {/* Round 1 → Quarterfinals */}
 
 <PairConnector
-  sourceLeft={20}
-  sourceTop1={90}
-  sourceTop2={190}
-  targetLeft={300}
-  targetTop={140}
+  source={[UPPER_POSITIONS[1][0], UPPER_POSITIONS[1][1]]}
+  target={UPPER_POSITIONS[2][0]}
 />
 
 <PairConnector
-  sourceLeft={20}
-  sourceTop1={290}
-  sourceTop2={390}
-  targetLeft={300}
-  targetTop={340}
+  source={[UPPER_POSITIONS[1][2], UPPER_POSITIONS[1][3]]}
+  target={UPPER_POSITIONS[2][1]}
 />
 
 {/* Quarterfinals → Semifinals */}
 
 <PairConnector
-  sourceLeft={300}
-  sourceTop1={140}
-  sourceTop2={240}
-  targetLeft={590}
-  targetTop={195}
+  source={[UPPER_POSITIONS[2][0], UPPER_POSITIONS[2][1]]}
+  target={UPPER_POSITIONS[3][0]}
 />
 
 <PairConnector
-  sourceLeft={300}
-  sourceTop1={340}
-  sourceTop2={440}
-  targetLeft={590}
-  targetTop={395}
+  source={[UPPER_POSITIONS[2][2], UPPER_POSITIONS[2][3]]}
+  target={UPPER_POSITIONS[3][1]}
 />
 
 {/* Semifinals → Upper Final */}
 
 <PairConnector
-  sourceLeft={590}
-  sourceTop1={195}
-  sourceTop2={395}
-  targetLeft={875}
-  targetTop={295}
+  source={[UPPER_POSITIONS[3][0], UPPER_POSITIONS[3][1]]}
+  target={UPPER_POSITIONS[4][0]}
+/>
+
+{/* Upper Final → Grand Final (hands off to FinalsConnector) */}
+
+<HorizontalConnector
+  left={UPPER_POSITIONS[4][0].left + MATCH_WIDTH}
+  top={UPPER_FINAL_Y - 0.5}
+  width={
+    BRACKET_COLUMN_WIDTH -
+    (UPPER_POSITIONS[4][0].left + MATCH_WIDTH)
+  }
 />
     </div>
   );
@@ -694,70 +820,53 @@ function LowerBracket({
         }),
       )}
 
-      {/* Lower Round 1 -> Lower Round 2 */}
-    <PairConnector
-      sourceLeft={20}
-      sourceTop1={90}
-      sourceTop2={190}
-      targetLeft={300}
-      targetTop={145}
-    />
-
-    <PairConnector
-      sourceLeft={20}
-      sourceTop1={290}
-      sourceTop2={390}
-      targetLeft={300}
-      targetTop={345}
-    />
-{/* Lower Round 1 → Lower Round 2 */}
+      {/* Lower Round 1 → Lower Round 2 */}
 
 <PairConnector
-  sourceLeft={20}
-  sourceTop1={90}
-  sourceTop2={190}
-  targetLeft={300}
-  targetTop={145}
+  source={[LOWER_POSITIONS[1][0], LOWER_POSITIONS[1][1]]}
+  target={LOWER_POSITIONS[2][0]}
 />
 
 <PairConnector
-  sourceLeft={20}
-  sourceTop1={290}
-  sourceTop2={390}
-  targetLeft={300}
-  targetTop={345}
+  source={[LOWER_POSITIONS[1][2], LOWER_POSITIONS[1][3]]}
+  target={LOWER_POSITIONS[2][1]}
 />
 
-{/* Lower Round 2 → Lower Round 3 */}
+{/* Lower Round 2 → Lower Round 3 (one-to-one: each LR2 winner drops into the matching LR3 slot) */}
 
-<HorizontalConnector
-  left={525}
-  top={195.5}
-  width={65}
+<MatchConnector
+  source={LOWER_POSITIONS[2][0]}
+  target={LOWER_POSITIONS[3][0]}
 />
 
-<HorizontalConnector
-  left={525}
-  top={395.5}
-  width={65}
+<MatchConnector
+  source={LOWER_POSITIONS[2][1]}
+  target={LOWER_POSITIONS[3][1]}
 />
 
 {/* Lower Round 3 → Lower Round 4 */}
 
 <PairConnector
-  sourceLeft={590}
-  sourceTop1={195}
-  sourceTop2={395}
-  targetLeft={875}
-  targetTop={295}
+  source={[LOWER_POSITIONS[3][0], LOWER_POSITIONS[3][1]]}
+  target={LOWER_POSITIONS[4][0]}
 />
 
 {/* Lower Round 4 → Lower Final */}
 
+<MatchConnector
+  source={LOWER_POSITIONS[4][0]}
+  target={LOWER_POSITIONS[5][0]}
+/>
+
+{/* Lower Final → Grand Final (hands off to FinalsConnector) */}
+
 <HorizontalConnector
-  left={1100}
-  top={345.5}
-  width={30}
+  left={LOWER_POSITIONS[5][0].left + MATCH_WIDTH}
+  top={LOWER_POSITIONS[5][0].top + MATCH_HEIGHT / 2 - 0.5}
+  width={
+    BRACKET_COLUMN_WIDTH -
+    (LOWER_POSITIONS[5][0].left + MATCH_WIDTH)
+  }
 />
     </div>
   );
@@ -776,7 +885,7 @@ function GrandFinalPanel({
     );
 
   return (
-    <div className="relative h-[1080px] w-[320px] shrink-0 rounded-[20px] border border-amber-500/35 bg-[radial-gradient(circle_at_center,rgba(245,158,11,0.13),transparent_62%)]">
+    <div className="relative w-[320px] shrink-0 rounded-[20px] border border-amber-500/35 bg-[radial-gradient(circle_at_center,rgba(245,158,11,0.13),transparent_62%)]">
       <div className="px-5 pt-8 text-center">
         <Trophy className="mx-auto h-10 w-10 fill-amber-400 text-amber-400" />
 
@@ -793,7 +902,7 @@ function GrandFinalPanel({
         </p>
       </div>
 
-      <div className="absolute left-4 right-4 top-[210px] space-y-6">
+      <div className="mt-8 space-y-6 px-4 pb-8">
         {sorted.map(
           (match, index) => {
             const winnerA =
@@ -943,7 +1052,7 @@ export default function PlayoffBracketSection({
         </div>
 
         <div className="mt-10 w-full overflow-x-auto pb-5">
-          <div className="mx-auto flex w-max gap-6">
+          <div className="mx-auto flex w-max items-center gap-0">
             <div className="w-[1320px] shrink-0">
               <UpperBracket
                 matches={
@@ -958,6 +1067,19 @@ export default function PlayoffBracketSection({
                   }
                 />
               </div>
+            </div>
+
+            <div
+              className="relative shrink-0 self-stretch"
+              style={{
+                width: FINALS_LANE_WIDTH,
+              }}
+            >
+              <FinalsConnector
+                upperY={UPPER_FINAL_Y}
+                lowerY={LOWER_FINAL_Y}
+                width={FINALS_LANE_WIDTH}
+              />
             </div>
 
             <GrandFinalPanel
