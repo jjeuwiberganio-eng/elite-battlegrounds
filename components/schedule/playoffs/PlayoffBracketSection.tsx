@@ -1,5 +1,7 @@
 import { Crown, Trophy } from "lucide-react";
 
+import MobileBracketScaler from "./MobileBracketScaler";
+
 interface Team {
   id: string;
   name: string;
@@ -1051,7 +1053,8 @@ export default function PlayoffBracketSection({
           </p>
         </div>
 
-        <div className="mt-10 w-full overflow-x-auto pb-5">
+        {/* Desktop - unchanged, full-size with horizontal scroll if needed */}
+        <div className="mt-10 hidden w-full overflow-x-auto pb-5 lg:block">
           <div className="mx-auto flex w-max items-center gap-0">
             <div className="w-[1320px] shrink-0">
               <UpperBracket
@@ -1088,6 +1091,51 @@ export default function PlayoffBracketSection({
               }
             />
           </div>
+        </div>
+
+        {/* Mobile - scaled down to fit the whole bracket without horizontal scrolling */}
+        <div className="mt-10 lg:hidden">
+          <MobileBracketScaler
+            contentWidth={1730}
+            contentHeight={1329}
+          >
+            <div className="flex w-max items-center gap-0">
+              <div className="w-[1320px] shrink-0">
+                <UpperBracket
+                  matches={
+                    bracket.upperBracket
+                  }
+                />
+
+                <div className="mt-6 border-t border-amber-500/20 pt-6">
+                  <LowerBracket
+                    matches={
+                      bracket.lowerBracket
+                    }
+                  />
+                </div>
+              </div>
+
+              <div
+                className="relative shrink-0 self-stretch"
+                style={{
+                  width: FINALS_LANE_WIDTH,
+                }}
+              >
+                <FinalsConnector
+                  upperY={UPPER_FINAL_Y}
+                  lowerY={LOWER_FINAL_Y}
+                  width={FINALS_LANE_WIDTH}
+                />
+              </div>
+
+              <GrandFinalPanel
+                matches={
+                  bracket.grandFinals
+                }
+              />
+            </div>
+          </MobileBracketScaler>
         </div>
 
         <div className="mt-12 border-t border-amber-500/10 pt-10">

@@ -94,31 +94,34 @@ export default function StandingsTable({
           .
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-2xl border border-slate-200 shadow-sm">
-          <table className="w-full min-w-[760px] border-collapse text-left text-sm">
+        <div className="overflow-hidden rounded-2xl border border-slate-200 shadow-sm">
+          <table className="w-full border-collapse text-left text-sm">
             <thead>
               <tr className="bg-slate-900 text-xs uppercase tracking-wider text-slate-300">
-                <th className="px-4 py-4 font-bold">
+                <th className="px-3 py-4 font-bold sm:px-4">
                   #
                 </th>
 
-                <th className="px-4 py-4 font-bold">
+                <th className="px-3 py-4 font-bold sm:px-4">
                   Team
                 </th>
 
-                <th className="px-4 py-4 text-center font-bold">
-                  Matches
-                  <br />
-                  <span className="font-normal normal-case text-slate-400">
+                <th className="px-3 py-4 text-center font-bold sm:px-4">
+                  <span className="hidden sm:inline">
+                    Matches
+                    <br />
+                  </span>
+                  <span className="sm:font-normal sm:normal-case sm:text-slate-400">
                     W - L
                   </span>
                 </th>
 
-                <th className="px-4 py-4 text-center font-bold">
+                <th className="px-3 py-4 text-center font-bold sm:px-4">
                   Win Rate
                 </th>
 
-                <th className="px-4 py-4 text-center font-bold">
+                {/* Hidden on mobile - reference design drops these columns for small screens */}
+                <th className="hidden px-4 py-4 text-center font-bold sm:table-cell">
                   Maps
                   <br />
                   <span className="font-normal normal-case text-slate-400">
@@ -126,11 +129,11 @@ export default function StandingsTable({
                   </span>
                 </th>
 
-                <th className="px-4 py-4 text-center font-bold text-amber-400">
+                <th className="px-3 py-4 text-center font-bold text-amber-400 sm:px-4">
                   Points
                 </th>
 
-                <th className="px-4 py-4 text-center font-bold">
+                <th className="hidden px-4 py-4 text-center font-bold sm:table-cell">
                   Game
                   <br />
                   <span className="font-normal normal-case text-slate-400">
@@ -138,7 +141,7 @@ export default function StandingsTable({
                   </span>
                 </th>
 
-                <th className="px-4 py-4 text-center font-bold">
+                <th className="hidden px-4 py-4 text-center font-bold sm:table-cell">
                   Game
                   <br />
                   <span className="font-normal normal-case text-slate-400">
@@ -146,7 +149,7 @@ export default function StandingsTable({
                   </span>
                 </th>
 
-                <th className="px-4 py-4 text-center font-bold">
+                <th className="hidden px-4 py-4 text-center font-bold sm:table-cell">
                   Game Diff
                 </th>
               </tr>
@@ -166,52 +169,52 @@ export default function StandingsTable({
                       : ""
                   }`}
                 >
-                  <td className="px-4 py-4 font-bold text-slate-500">
+                  <td className="px-3 py-4 font-bold text-slate-500 sm:px-4">
                     {row.rank}
                   </td>
 
-                  <td className="px-4 py-4">
-                    <div className="flex items-center gap-3">
+                  <td className="px-3 py-4 sm:px-4">
+                    <div className="flex items-center gap-2 sm:gap-3">
                       <TeamLogo
                         src={row.team.logo}
                         alt={row.team.name}
                         size="sm"
                       />
 
-                      <span className="font-bold uppercase text-slate-900">
+                      <span className="truncate font-bold uppercase text-slate-900">
                         {row.team.name}
                       </span>
                     </div>
                   </td>
 
-                  <td className="px-4 py-4 text-center font-semibold text-slate-700">
+                  <td className="px-3 py-4 text-center font-semibold text-slate-700 sm:px-4">
                     {row.wins} - {row.losses}
                   </td>
 
-                  <td className="px-4 py-4 text-center font-semibold text-slate-700">
+                  <td className="px-3 py-4 text-center font-semibold text-slate-700 sm:px-4">
                     {row.winRate.toFixed(1)}
                     %
                   </td>
 
-                  <td className="px-4 py-4 text-center font-semibold text-slate-700">
+                  <td className="hidden px-4 py-4 text-center font-semibold text-slate-700 sm:table-cell">
                     {row.gameWins} -{" "}
                     {row.gameLosses}
                   </td>
 
-                  <td className="px-4 py-4 text-center text-lg font-black text-amber-500">
+                  <td className="px-3 py-4 text-center text-lg font-black text-amber-500 sm:px-4">
                     {row.points}
                   </td>
 
-                  <td className="px-4 py-4 text-center font-semibold text-slate-700">
+                  <td className="hidden px-4 py-4 text-center font-semibold text-slate-700 sm:table-cell">
                     {row.gameWins}
                   </td>
 
-                  <td className="px-4 py-4 text-center font-semibold text-slate-700">
+                  <td className="hidden px-4 py-4 text-center font-semibold text-slate-700 sm:table-cell">
                     {row.gameLosses}
                   </td>
 
                   <td
-                    className={`px-4 py-4 text-center font-bold ${
+                    className={`hidden px-4 py-4 text-center font-bold sm:table-cell ${
                       row.gameDiff > 0
                         ? "text-emerald-600"
                         : row.gameDiff < 0

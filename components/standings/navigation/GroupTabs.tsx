@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Shield } from "lucide-react";
 
 interface GroupTabsProps {
   groups: {
@@ -27,7 +26,7 @@ export default function GroupTabs({
   }
 
   return (
-    <div className="flex flex-wrap gap-3 border-b border-slate-200 pb-6">
+    <div className="flex flex-wrap gap-2 border-b border-slate-200 pb-6 sm:gap-3">
       {groups.map((group) => {
         const isActive =
           group.slug === activeGroup;
@@ -37,13 +36,12 @@ export default function GroupTabs({
             key={group.id}
             href={`?group=${group.slug}`}
             scroll={false}
-            className={`flex items-center gap-2 rounded-full border px-5 py-2.5 text-sm font-bold uppercase tracking-wide transition-all ${
+            className={`flex-1 rounded-full border px-3 py-2 text-center text-xs font-bold uppercase tracking-wide transition-all sm:flex-none sm:px-5 sm:py-2.5 sm:text-sm ${
               isActive
                 ? "border-amber-500 bg-amber-500 text-white shadow-sm"
                 : "border-slate-200 bg-white text-slate-600 hover:border-amber-300 hover:text-slate-900"
             }`}
           >
-            <Shield className="h-4 w-4" />
             {group.name}
           </Link>
         );

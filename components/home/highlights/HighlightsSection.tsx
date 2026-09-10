@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
+
 import HighlightCard from "./HighlightCard";
 
 interface HighlightItem {
@@ -24,87 +26,81 @@ export default function HighlightsSection({
   const posterItems = posters.slice(0, 3);
   const videoItems = videos.slice(0, 3);
 
+  if (
+    posterItems.length === 0 &&
+    videoItems.length === 0
+  ) {
+    return null;
+  }
+
   return (
-    <section className="bg-white py-10">
-      <div className="w-full px-8">
+    <section className="bg-white py-10 lg:py-14">
+      <div className="w-full px-6 sm:px-8">
+        <div className="mb-8 flex items-center gap-4">
+          <div className="h-px flex-1 bg-amber-200" />
 
-        {/* Heading */}
-        <div className="mb-4 flex items-center gap-4">
-          <div className="h-px flex-1 bg-amber-500" />
-
-          <h2 className="whitespace-nowrap text-3xl font-black uppercase text-slate-950">
+          <h2 className="text-2xl font-black uppercase tracking-tight text-slate-900 sm:text-3xl">
             Highlights
           </h2>
 
-          <div className="h-px flex-1 bg-amber-500" />
+          <div className="h-px flex-1 bg-amber-200" />
         </div>
 
-        <div className="grid grid-cols-6 gap-4">
+        {/* Stacked on mobile, side-by-side from lg up */}
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-6">
+          {posterItems.length > 0 && (
+            <div className="lg:col-span-3">
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="text-sm font-black uppercase tracking-wide text-slate-500">
+                  Posters
+                </h3>
 
-          {/* Posters */}
-          <div className="col-span-3 min-w-0">
-            <div className="mb-2 flex items-center justify-between">
-              <h3 className="text-sm font-black uppercase text-slate-950">
-                Posters
-              </h3>
+                <Link
+                  href="/highlights"
+                  className="flex items-center gap-1 text-xs font-bold uppercase text-amber-600 hover:text-amber-700"
+                >
+                  View All
+                  <ArrowRight className="h-3 w-3" />
+                </Link>
+              </div>
 
-              <Link
-                href="/highlights"
-                className="
-                  text-xs
-                  font-bold
-                  uppercase
-                  text-slate-900
-                  transition-colors
-                  hover:text-amber-600
-                "
-              >
-                View All Posters →
-              </Link>
+              <div className="grid grid-cols-2 gap-4">
+                {posterItems.map((item) => (
+                  <HighlightCard
+                    key={item.id}
+                    highlight={item}
+                  />
+                ))}
+              </div>
             </div>
+          )}
 
-            <div className="grid grid-cols-3 gap-4">
-              {posterItems.map((item) => (
-                <HighlightCard
-                  key={item.id}
-                  highlight={item}
-                />
-              ))}
+          {videoItems.length > 0 && (
+            <div className="lg:col-span-3">
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="text-sm font-black uppercase tracking-wide text-slate-500">
+                  Short Videos
+                </h3>
+
+                <Link
+                  href="/highlights"
+                  className="flex items-center gap-1 text-xs font-bold uppercase text-amber-600 hover:text-amber-700"
+                >
+                  View All
+                  <ArrowRight className="h-3 w-3" />
+                </Link>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                {videoItems.map((item) => (
+                  <HighlightCard
+                    key={item.id}
+                    highlight={item}
+                  />
+                ))}
+              </div>
             </div>
-          </div>
-
-          {/* Short Videos */}
-          <div className="col-span-3 min-w-0">
-            <div className="mb-2 flex items-center justify-between">
-              <h3 className="text-sm font-black uppercase text-slate-950">
-                Short Videos
-              </h3>
-
-              <Link
-                href="/highlights"
-                className="
-                  text-xs
-                  font-bold
-                  uppercase
-                  text-slate-900
-                  transition-colors
-                  hover:text-amber-600
-                "
-              >
-                View All Short Videos →
-              </Link>
-            </div>
-
-            <div className="grid grid-cols-3 gap-4">
-              {videoItems.map((item) => (
-                <HighlightCard
-                  key={item.id}
-                  highlight={item}
-                />
-              ))}
-            </div>
-          </div>
-
+          )}
         </div>
       </div>
     </section>
