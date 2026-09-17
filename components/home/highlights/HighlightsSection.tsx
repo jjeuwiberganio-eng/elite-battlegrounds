@@ -34,12 +34,12 @@ export default function HighlightsSection({
   }
 
   return (
-    <section className="bg-white py-10 lg:py-14">
-      <div className="w-full px-6 sm:px-8">
-        <div className="mb-8 flex items-center gap-4">
+    <section className="bg-white py-6 sm:py-10 lg:py-14">
+      <div className="w-full px-4 sm:px-6 sm:px-8">
+        <div className="mb-4 flex items-center gap-3 sm:mb-8 sm:gap-4">
           <div className="h-px flex-1 bg-amber-200" />
 
-          <h2 className="text-2xl font-black uppercase tracking-tight text-slate-900 sm:text-3xl">
+          <h2 className="text-lg font-black uppercase tracking-tight text-slate-900 sm:text-2xl lg:text-3xl">
             Highlights
           </h2>
 
@@ -47,7 +47,7 @@ export default function HighlightsSection({
         </div>
 
         {/* Stacked on mobile, side-by-side from lg up */}
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-6">
+        <div className="grid grid-cols-1 gap-5 sm:gap-8 lg:grid-cols-6">
           {posterItems.length > 0 && (
             <div className="lg:col-span-3">
               <div className="mb-4 flex items-center justify-between">

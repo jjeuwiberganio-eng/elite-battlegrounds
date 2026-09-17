@@ -93,11 +93,15 @@ export default function TournamentFeatures({
                   className="
                     relative
                     flex
-                    min-h-[130px]
+                    min-h-[84px]
                     items-center
-                    gap-4
-                    px-5
-                    py-5
+                    gap-2.5
+                    px-3
+                    py-3
+                    sm:min-h-[130px]
+                    sm:gap-4
+                    sm:px-5
+                    sm:py-5
                     sm:px-6
                     lg:min-h-[145px]
                     lg:flex-col
@@ -126,8 +130,8 @@ export default function TournamentFeatures({
                   <div
                     className="
                       flex
-                      h-11
-                      w-11
+                      h-8
+                      w-8
                       shrink-0
                       items-center
                       justify-center
@@ -136,10 +140,12 @@ export default function TournamentFeatures({
                       text-amber-600
                       ring-1
                       ring-amber-200
+                      sm:h-11
+                      sm:w-11
                     "
                   >
                     <Icon
-                      className="h-5 w-5"
+                      className="h-4 w-4 sm:h-5 sm:w-5"
                       strokeWidth={2}
                     />
                   </div>
@@ -147,11 +153,12 @@ export default function TournamentFeatures({
                   <div className="min-w-0">
                     <h3
                       className="
-                        text-sm
+                        text-xs
                         font-black
                         uppercase
                         tracking-wide
                         text-slate-950
+                        sm:text-sm
                       "
                     >
                       {title}
@@ -159,12 +166,15 @@ export default function TournamentFeatures({
 
                     <p
                       className="
-                        mt-1
-                        text-xs
+                        mt-0.5
+                        text-[10px]
                         font-semibold
                         uppercase
-                        leading-5
+                        leading-4
                         text-slate-500
+                        sm:mt-1
+                        sm:text-xs
+                        sm:leading-5
                         lg:max-w-[170px]
                       "
                     >

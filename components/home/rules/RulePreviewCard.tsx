@@ -50,44 +50,50 @@ export default function RulePreviewCard({
         group
         relative
         overflow-hidden
-        rounded-2xl
+        rounded-xl
         border
         border-slate-200
         bg-white
-        min-h-[150px] p-6
+        p-3
         shadow-sm
         transition-all
         duration-300
         hover:-translate-y-1
         hover:border-amber-400
         hover:shadow-xl
+        sm:rounded-2xl
+        sm:min-h-[150px]
+        sm:p-6
       "
     >
       {/* Icon */}
       <div
         className="
           flex
-          h-11
-          w-11
+          h-8
+          w-8
           items-center
           justify-center
-          rounded-xl
+          rounded-lg
           bg-amber-100
           text-amber-600
           transition
           duration-300
           group-hover:bg-amber-400
           group-hover:text-slate-950
+          sm:h-11
+          sm:w-11
+          sm:rounded-xl
         "
       >
-        <Icon className="h-5 w-5" />
+        <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
       </div>
 
       {/* Title */}
       <h3
         className="
-          mt-5
-          text-lg
+          mt-2.5
+          text-xs
           font-black
           uppercase
           leading-tight
@@ -95,13 +101,15 @@ export default function RulePreviewCard({
           transition-colors
           duration-300
           group-hover:text-amber-600
+          sm:mt-5
+          sm:text-lg
         "
       >
         {rule.title}
       </h3>
 
       {/* Description */}
-      <p className="mt-3 text-sm leading-6 text-slate-500">
+      <p className="mt-1.5 text-[11px] leading-4 text-slate-500 sm:mt-3 sm:text-sm sm:leading-6">
         {rule.description}
       </p>
 
