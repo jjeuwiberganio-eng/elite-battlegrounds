@@ -23,11 +23,11 @@ export default function HeroContent({
       <p className="text-xs font-bold uppercase tracking-[0.32em] text-slate-900 sm:text-sm">
         {tournament.name}
       </p>
-<h1 className="mt-8 text-[4.2rem] font-black uppercase leading-[0.82] tracking-[-0.055em] text-slate-950 sm:text-[5.8rem] lg:text-[6.8rem]">
+<h1 className="mt-6 text-[3.2rem] font-black uppercase leading-[0.82] tracking-[-0.055em] text-slate-950 sm:text-[5.8rem] lg:text-[6.8rem]">
      Elite
      </h1>
 
-<h2 className="mt-3 text-[3rem] font-black uppercase leading-[0.9] tracking-[-0.04em] text-amber-600 sm:text-[4rem] lg:text-[4.8rem]">
+<h2 className="mt-2 text-[2.3rem] font-black uppercase leading-[0.9] tracking-[-0.04em] text-amber-600 sm:text-[4rem] lg:text-[4.8rem]">
     Battlegrounds
     </h2>
 
@@ -41,7 +41,7 @@ export default function HeroContent({
         <span className="h-[2px] w-10 bg-amber-600 sm:w-14" />
       </div>
 
-      <div className="mt-10">
+      <div className="mt-6 sm:mt-10">
         <p className="text-xl font-black uppercase italic leading-[1.05] text-slate-950 sm:text-2xl">
           Play Together.
           <br />
@@ -59,7 +59,7 @@ export default function HeroContent({
         </p>
       )}
 
-      <div className="mt-8">
+      <div className="mt-6 sm:mt-8">
         <HeroActions
           registrationOpen={tournament.registrationOpen}
           registrationUrl={tournament.registrationUrl}

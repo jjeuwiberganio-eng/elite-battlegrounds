@@ -45,21 +45,6 @@ export default function HeroBackground({
         "
       />
 
-      {/* Mobile readability */}
-      <div
-        className="
-          pointer-events-none
-          absolute
-          inset-0
-          z-[1]
-          bg-gradient-to-b
-          from-white
-          via-white/85
-          to-white/20
-          lg:hidden
-        "
-      />
-
       <div
         className="
           pointer-events-none
