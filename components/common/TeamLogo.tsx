@@ -1,15 +1,17 @@
 import Image from "next/image";
 
 interface TeamLogoProps {
-  src: string | null;
+  src?: string | null;
   alt: string;
-  size?: "sm" | "md" | "lg";
+  size?: "sm" | "md" | "lg" | "xl" | "2xl";
 }
 
 const SIZE_MAP = {
   sm: 32,
   md: 44,
   lg: 64,
+  xl: 88,
+  "2xl": 112,
 };
 
 export default function TeamLogo({
