@@ -1027,16 +1027,16 @@ export default function PlayoffBracketSection({
   upcomingMatches,
 }: Readonly<PlayoffBracketSectionProps>) {
   return (
-    <section className="relative overflow-hidden bg-[#030507] py-14 text-white sm:py-20">
+    <section className="relative overflow-hidden bg-[#030507] py-8 text-white sm:py-14 lg:py-20">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(245,158,11,0.14),transparent_32%),radial-gradient(circle_at_bottom_left,rgba(245,158,11,0.08),transparent_30%)]" />
 
       <div className="relative w-full px-4 sm:px-6">
         <div className="text-center">
-          <p className="text-[10px] font-black uppercase tracking-[0.35em] text-amber-400 sm:text-xs">
+          <p className="text-[9px] font-black uppercase tracking-[0.2em] text-amber-400 sm:text-[10px] sm:tracking-[0.35em] lg:text-xs">
             Elite Battlegrounds Series · Season 1
           </p>
 
-          <h2 className="mt-2 text-5xl font-black uppercase tracking-tight sm:text-7xl">
+          <h2 className="mt-2 text-3xl font-black uppercase tracking-tight sm:text-5xl lg:text-7xl">
             <span className="text-white">
               Playoffs{" "}
             </span>
@@ -1046,9 +1046,9 @@ export default function PlayoffBracketSection({
             </span>
           </h2>
 
-          <div className="mx-auto mt-3 h-px max-w-5xl bg-gradient-to-r from-transparent via-amber-400 to-transparent" />
+          <div className="mx-auto mt-2 h-px max-w-xs bg-gradient-to-r from-transparent via-amber-400 to-transparent sm:mt-3 sm:max-w-5xl" />
 
-          <p className="mt-3 text-[10px] font-black uppercase tracking-[0.24em] text-white/45 sm:text-sm">
+          <p className="mt-2 text-[9px] font-black uppercase tracking-[0.16em] text-white/45 sm:mt-3 sm:text-[10px] sm:tracking-[0.24em] lg:text-sm">
             Double Elimination · Manual Bracket Control
           </p>
         </div>
@@ -1094,7 +1094,7 @@ export default function PlayoffBracketSection({
         </div>
 
         {/* Mobile - scaled down to fit the whole bracket without horizontal scrolling */}
-        <div className="mt-10 lg:hidden">
+        <div className="mt-6 lg:hidden">
           <MobileBracketScaler
             contentWidth={1730}
             contentHeight={1329}
@@ -1138,17 +1138,17 @@ export default function PlayoffBracketSection({
           </MobileBracketScaler>
         </div>
 
-        <div className="mt-12 border-t border-amber-500/10 pt-10">
+        <div className="mt-8 border-t border-amber-500/10 pt-6 sm:mt-12 sm:pt-10">
           <div className="text-center">
-            <p className="text-xs font-black uppercase tracking-[0.3em] text-amber-400">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-400 sm:text-xs sm:tracking-[0.3em]">
               Upcoming
             </p>
 
-            <h3 className="mt-2 text-3xl font-black uppercase sm:text-4xl">
+            <h3 className="mt-2 text-xl font-black uppercase sm:text-3xl lg:text-4xl">
               Upcoming Playoff Matches
             </h3>
 
-            <p className="mt-2 text-sm text-white/45">
+            <p className="mt-2 text-xs text-white/45 sm:text-sm">
               Scheduled playoff matches and their individual livestreams.
             </p>
           </div>

@@ -19,9 +19,9 @@ export default function ScheduleTabs({
 }: Readonly<ScheduleTabsProps>) {
   return (
     <section className="bg-white">
-      <div className="container mx-auto max-w-7xl px-6">
+      <div className="container mx-auto max-w-7xl px-4 sm:px-6">
 
-        <div className="mx-auto flex max-w-4xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="mx-auto flex max-w-4xl overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm sm:rounded-2xl">
 
           {/* Group Stage */}
           <button
@@ -29,18 +29,18 @@ export default function ScheduleTabs({
             onClick={() =>
               onTabChange("group-stage")
             }
-            className={`flex flex-1 items-center justify-center gap-3 py-6 text-lg font-bold transition-all ${
+            className={`flex flex-1 items-center justify-center gap-2 py-3 text-xs font-bold transition-all sm:gap-3 sm:py-6 sm:text-lg ${
               activeTab === "group-stage"
                 ? "bg-amber-500 text-white"
                 : "bg-white text-slate-900 hover:bg-slate-100"
             }`}
           >
-            <CalendarDays className="h-5 w-5" />
+            <CalendarDays className="h-4 w-4 sm:h-5 sm:w-5" />
 
             <div className="text-left">
               <p>GROUP STAGE</p>
 
-              <p className="text-xs font-medium opacity-80">
+              <p className="text-[9px] font-medium opacity-80 sm:text-xs">
                 Round Robin
               </p>
             </div>
@@ -52,18 +52,18 @@ export default function ScheduleTabs({
             onClick={() =>
               onTabChange("playoffs")
             }
-            className={`flex flex-1 items-center justify-center gap-3 py-6 text-lg font-bold transition-all ${
+            className={`flex flex-1 items-center justify-center gap-2 py-3 text-xs font-bold transition-all sm:gap-3 sm:py-6 sm:text-lg ${
               activeTab === "playoffs"
                 ? "bg-amber-500 text-white"
                 : "bg-white text-slate-900 hover:bg-slate-100"
             }`}
           >
-            <Trophy className="h-5 w-5" />
+            <Trophy className="h-4 w-4 sm:h-5 sm:w-5" />
 
             <div className="text-left">
               <p>PLAYOFFS</p>
 
-              <p className="text-xs font-medium opacity-80">
+              <p className="text-[9px] font-medium opacity-80 sm:text-xs">
                 Double Elimination
               </p>
             </div>
