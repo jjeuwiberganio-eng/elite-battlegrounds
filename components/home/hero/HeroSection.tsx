@@ -73,9 +73,9 @@ export default function HeroSection({
           flex-col
           px-5
           pb-10
-          pt-32
+          pt-8
           sm:px-8
-          sm:pt-36
+          sm:pt-10
           lg:min-h-[680px]
           lg:flex-row
           lg:items-center

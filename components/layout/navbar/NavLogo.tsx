@@ -5,7 +5,7 @@ export default function NavLogo() {
   return (
     <Link
       href="/"
-      className="relative z-10 flex shrink-0 items-center gap-4"
+      className="relative z-10 hidden shrink-0 items-center gap-4 lg:flex"
       aria-label="Elite Battlegrounds Series home"
     >
     <div className="relative h-20 w-20 shrink-0 sm:h-24 sm:w-24 lg:h-32 lg:w-32">
