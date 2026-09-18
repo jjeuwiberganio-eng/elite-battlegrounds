@@ -19,7 +19,7 @@ export default function StandingsHeroSection({
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,#f59e0b,transparent_60%)] opacity-10" />
 
       <div
-        className="container mx-auto max-w-7xl px-6 pb-8 pt-10 sm:pb-16 sm:pt-14 lg:pb-20 lg:pt-[190px]"
+        className="container mx-auto max-w-[1500px] px-6 pb-8 pt-10 sm:pb-16 sm:pt-14 lg:pb-20 lg:pt-[220px]"
       >
         {/* Icon */}
         <div className="flex justify-center">

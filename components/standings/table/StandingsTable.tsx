@@ -94,158 +94,249 @@ export default function StandingsTable({
           .
         </div>
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-slate-200 shadow-sm">
-          <table className="w-full border-collapse text-left text-sm">
-            <thead>
-              <tr className="bg-slate-900 text-xs uppercase tracking-wider text-slate-300">
-                <th className="px-3 py-4 font-bold sm:px-4">
-                  #
-                </th>
-
-                <th className="px-3 py-4 font-bold sm:px-4">
-                  Team
-                </th>
-
-                <th className="px-3 py-4 text-center font-bold sm:px-4">
-                  <span className="hidden sm:inline">
-                    Matches
-                    <br />
-                  </span>
-                  <span className="sm:font-normal sm:normal-case sm:text-slate-400">
-                    W - L
-                  </span>
-                </th>
-
-                <th className="px-3 py-4 text-center font-bold sm:px-4">
-                  Win Rate
-                </th>
-
-                {/* Hidden on mobile - reference design drops these columns for small screens */}
-                <th className="hidden px-4 py-4 text-center font-bold sm:table-cell">
-                  Maps
-                  <br />
-                  <span className="font-normal normal-case text-slate-400">
-                    W - L
-                  </span>
-                </th>
-
-                <th className="px-3 py-4 text-center font-bold text-amber-400 sm:px-4">
-                  Points
-                </th>
-
-                <th className="hidden px-4 py-4 text-center font-bold sm:table-cell">
-                  Game
-                  <br />
-                  <span className="font-normal normal-case text-slate-400">
-                    Win
-                  </span>
-                </th>
-
-                <th className="hidden px-4 py-4 text-center font-bold sm:table-cell">
-                  Game
-                  <br />
-                  <span className="font-normal normal-case text-slate-400">
-                    Loss
-                  </span>
-                </th>
-
-                <th className="hidden px-4 py-4 text-center font-bold sm:table-cell">
-                  Game Diff
-                </th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {rows.map((row, index) => (
-                <tr
-                  key={row.id}
-                  className={`group border-b border-slate-100 transition-colors last:border-0 hover:bg-amber-50/50 ${
-                    index % 2 === 1
-                      ? "bg-slate-50/60"
-                      : "bg-white"
-                  } ${
-                    row.rank <= 2
-                      ? "border-l-4 border-l-amber-400 bg-amber-50/30"
-                      : ""
-                  }`}
-                >
-                  <td className="px-3 py-4 sm:px-4">
-                    <span
-                      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-black ${
-                        row.rank === 1
-                          ? "bg-gradient-to-br from-amber-300 to-amber-500 text-white shadow-sm ring-2 ring-amber-200"
-                          : row.rank === 2
-                            ? "bg-gradient-to-br from-slate-300 to-slate-400 text-white shadow-sm ring-2 ring-slate-200"
-                            : row.rank === 3
-                              ? "bg-gradient-to-br from-orange-300 to-orange-500 text-white shadow-sm ring-2 ring-orange-200"
-                              : "bg-slate-100 text-slate-500"
-                      }`}
-                    >
-                      {row.rank}
-                    </span>
-                  </td>
-
-                  <td className="px-3 py-4 sm:px-4">
-                    <div className="flex items-center gap-2 sm:gap-3">
-                      <TeamLogo
-                        src={row.team.logo}
-                        alt={row.team.name}
-                        size="sm"
-                      />
-
-                      <span className="truncate font-bold uppercase text-slate-900">
-                        {row.team.name}
-                      </span>
-                    </div>
-                  </td>
-
-                  <td className="px-3 py-4 text-center font-semibold text-slate-700 sm:px-4">
-                    {row.wins} - {row.losses}
-                  </td>
-
-                  <td className="px-3 py-4 text-center font-semibold text-slate-700 sm:px-4">
-                    {row.winRate.toFixed(1)}
-                    %
-                  </td>
-
-                  <td className="hidden px-4 py-4 text-center font-semibold text-slate-700 sm:table-cell">
-                    {row.gameWins} -{" "}
-                    {row.gameLosses}
-                  </td>
-
-                  <td className="px-3 py-4 text-center sm:px-4">
-                    <span className="inline-flex min-w-[2.75rem] items-center justify-center rounded-lg bg-amber-100 px-2.5 py-1 text-base font-black text-amber-600 shadow-sm ring-1 ring-amber-200/70 transition-colors group-hover:bg-amber-200/70">
-                      {row.points}
-                    </span>
-                  </td>
-
-                  <td className="hidden px-4 py-4 text-center font-semibold text-slate-700 sm:table-cell">
-                    {row.gameWins}
-                  </td>
-
-                  <td className="hidden px-4 py-4 text-center font-semibold text-slate-700 sm:table-cell">
-                    {row.gameLosses}
-                  </td>
-
-                  <td
-                    className={`hidden px-4 py-4 text-center font-bold sm:table-cell ${
-                      row.gameDiff > 0
-                        ? "text-emerald-600"
-                        : row.gameDiff < 0
-                          ? "text-red-500"
-                          : "text-slate-500"
+        <>
+          {/* Mobile - stacked cards, every stat visible, no hidden columns */}
+          <div className="space-y-3 sm:hidden">
+            {rows.map((row) => (
+              <div
+                key={row.id}
+                className={`overflow-hidden rounded-2xl border shadow-sm ${
+                  row.rank <= 2
+                    ? "border-amber-300 bg-amber-50/30"
+                    : "border-slate-200 bg-white"
+                }`}
+              >
+                <div className="flex items-center gap-2.5 px-4 pt-4">
+                  <span
+                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-black ${
+                      row.rank === 1
+                        ? "bg-gradient-to-br from-amber-300 to-amber-500 text-white shadow-sm ring-2 ring-amber-200"
+                        : row.rank === 2
+                          ? "bg-gradient-to-br from-slate-300 to-slate-400 text-white shadow-sm ring-2 ring-slate-200"
+                          : row.rank === 3
+                            ? "bg-gradient-to-br from-orange-300 to-orange-500 text-white shadow-sm ring-2 ring-orange-200"
+                            : "bg-slate-100 text-slate-500"
                     }`}
                   >
-                    {row.gameDiff > 0
-                      ? "+"
-                      : ""}
-                    {row.gameDiff}
-                  </td>
+                    {row.rank}
+                  </span>
+
+                  <TeamLogo
+                    src={row.team.logo}
+                    alt={row.team.name}
+                    size="sm"
+                  />
+
+                  <span className="min-w-0 flex-1 truncate text-sm font-bold uppercase text-slate-900">
+                    {row.team.name}
+                  </span>
+
+                  <span className="inline-flex shrink-0 items-center justify-center rounded-lg bg-amber-100 px-2.5 py-1 text-base font-black text-amber-600 shadow-sm ring-1 ring-amber-200/70">
+                    {row.points}
+                  </span>
+                </div>
+
+                <div className="mt-3 grid grid-cols-4 divide-x divide-slate-100 border-t border-slate-100 bg-slate-50/60 text-center">
+                  <div className="px-1.5 py-2.5">
+                    <p className="text-xs font-bold text-slate-700">
+                      {row.wins}-{row.losses}
+                    </p>
+                    <p className="mt-0.5 text-[9px] font-semibold uppercase tracking-wide text-slate-400">
+                      Match
+                    </p>
+                  </div>
+
+                  <div className="px-1.5 py-2.5">
+                    <p className="text-xs font-bold text-slate-700">
+                      {row.winRate.toFixed(0)}%
+                    </p>
+                    <p className="mt-0.5 text-[9px] font-semibold uppercase tracking-wide text-slate-400">
+                      Win Rate
+                    </p>
+                  </div>
+
+                  <div className="px-1.5 py-2.5">
+                    <p className="text-xs font-bold text-slate-700">
+                      {row.gameWins}-{row.gameLosses}
+                    </p>
+                    <p className="mt-0.5 text-[9px] font-semibold uppercase tracking-wide text-slate-400">
+                      Maps
+                    </p>
+                  </div>
+
+                  <div className="px-1.5 py-2.5">
+                    <p
+                      className={`text-xs font-bold ${
+                        row.gameDiff > 0
+                          ? "text-emerald-600"
+                          : row.gameDiff < 0
+                            ? "text-red-500"
+                            : "text-slate-700"
+                      }`}
+                    >
+                      {row.gameDiff > 0 ? "+" : ""}
+                      {row.gameDiff}
+                    </p>
+                    <p className="mt-0.5 text-[9px] font-semibold uppercase tracking-wide text-slate-400">
+                      Diff
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop - full table, sized generously so nothing needs zooming */}
+          <div className="hidden overflow-hidden rounded-2xl border border-slate-200 shadow-sm sm:block">
+            <table className="w-full border-collapse text-left text-sm lg:text-base">
+              <thead>
+                <tr className="bg-slate-900 text-xs uppercase tracking-wider text-slate-300 lg:text-sm">
+                  <th className="px-4 py-4 font-bold lg:px-5 lg:py-5">
+                    #
+                  </th>
+
+                  <th className="px-4 py-4 font-bold lg:px-5 lg:py-5">
+                    Team
+                  </th>
+
+                  <th className="px-4 py-4 text-center font-bold lg:px-5 lg:py-5">
+                    Matches
+                    <br />
+                    <span className="font-normal normal-case text-slate-400">
+                      W - L
+                    </span>
+                  </th>
+
+                  <th className="px-4 py-4 text-center font-bold lg:px-5 lg:py-5">
+                    Win Rate
+                  </th>
+
+                  <th className="px-4 py-4 text-center font-bold lg:px-5 lg:py-5">
+                    Maps
+                    <br />
+                    <span className="font-normal normal-case text-slate-400">
+                      W - L
+                    </span>
+                  </th>
+
+                  <th className="px-4 py-4 text-center font-bold text-amber-400 lg:px-5 lg:py-5">
+                    Points
+                  </th>
+
+                  <th className="px-4 py-4 text-center font-bold lg:px-5 lg:py-5">
+                    Game
+                    <br />
+                    <span className="font-normal normal-case text-slate-400">
+                      Win
+                    </span>
+                  </th>
+
+                  <th className="px-4 py-4 text-center font-bold lg:px-5 lg:py-5">
+                    Game
+                    <br />
+                    <span className="font-normal normal-case text-slate-400">
+                      Loss
+                    </span>
+                  </th>
+
+                  <th className="px-4 py-4 text-center font-bold lg:px-5 lg:py-5">
+                    Game Diff
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+
+              <tbody>
+                {rows.map((row, index) => (
+                  <tr
+                    key={row.id}
+                    className={`group border-b border-slate-100 transition-colors last:border-0 hover:bg-amber-50/50 ${
+                      index % 2 === 1
+                        ? "bg-slate-50/60"
+                        : "bg-white"
+                    } ${
+                      row.rank <= 2
+                        ? "border-l-4 border-l-amber-400 bg-amber-50/30"
+                        : ""
+                    }`}
+                  >
+                    <td className="px-4 py-4 lg:px-5 lg:py-5">
+                      <span
+                        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-black lg:h-9 lg:w-9 lg:text-sm ${
+                          row.rank === 1
+                            ? "bg-gradient-to-br from-amber-300 to-amber-500 text-white shadow-sm ring-2 ring-amber-200"
+                            : row.rank === 2
+                              ? "bg-gradient-to-br from-slate-300 to-slate-400 text-white shadow-sm ring-2 ring-slate-200"
+                              : row.rank === 3
+                                ? "bg-gradient-to-br from-orange-300 to-orange-500 text-white shadow-sm ring-2 ring-orange-200"
+                                : "bg-slate-100 text-slate-500"
+                        }`}
+                      >
+                        {row.rank}
+                      </span>
+                    </td>
+
+                    <td className="px-4 py-4 lg:px-5 lg:py-5">
+                      <div className="flex items-center gap-3 lg:gap-4">
+                        <TeamLogo
+                          src={row.team.logo}
+                          alt={row.team.name}
+                          size="md"
+                        />
+
+                        <span className="truncate font-bold uppercase text-slate-900">
+                          {row.team.name}
+                        </span>
+                      </div>
+                    </td>
+
+                    <td className="px-4 py-4 text-center font-semibold text-slate-700 lg:px-5 lg:py-5">
+                      {row.wins} - {row.losses}
+                    </td>
+
+                    <td className="px-4 py-4 text-center font-semibold text-slate-700 lg:px-5 lg:py-5">
+                      {row.winRate.toFixed(1)}
+                      %
+                    </td>
+
+                    <td className="px-4 py-4 text-center font-semibold text-slate-700 lg:px-5 lg:py-5">
+                      {row.gameWins} -{" "}
+                      {row.gameLosses}
+                    </td>
+
+                    <td className="px-4 py-4 text-center lg:px-5 lg:py-5">
+                      <span className="inline-flex min-w-[2.75rem] items-center justify-center rounded-lg bg-amber-100 px-2.5 py-1 text-base font-black text-amber-600 shadow-sm ring-1 ring-amber-200/70 transition-colors group-hover:bg-amber-200/70 lg:min-w-[3.25rem] lg:px-3 lg:py-1.5 lg:text-lg">
+                        {row.points}
+                      </span>
+                    </td>
+
+                    <td className="px-4 py-4 text-center font-semibold text-slate-700 lg:px-5 lg:py-5">
+                      {row.gameWins}
+                    </td>
+
+                    <td className="px-4 py-4 text-center font-semibold text-slate-700 lg:px-5 lg:py-5">
+                      {row.gameLosses}
+                    </td>
+
+                    <td
+                      className={`px-4 py-4 text-center font-bold lg:px-5 lg:py-5 ${
+                        row.gameDiff > 0
+                          ? "text-emerald-600"
+                          : row.gameDiff < 0
+                            ? "text-red-500"
+                            : "text-slate-500"
+                      }`}
+                    >
+                      {row.gameDiff > 0
+                        ? "+"
+                        : ""}
+                      {row.gameDiff}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
 
       <p className="mt-4 text-xs text-slate-400">
