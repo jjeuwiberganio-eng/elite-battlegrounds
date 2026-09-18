@@ -1,5 +1,7 @@
 "use server";
 
+import { TOURNAMENT_RULES } from "@/lib/rules-data";
+
 export interface AboutPageData {
   hero: {
     title: string;
@@ -122,63 +124,12 @@ export interface TournamentRuleSummary {
 export async function getTournamentRulesSummary(): Promise<
   TournamentRuleSummary[]
 > {
-  return [
-    {
-      id: "follow-rules",
-      title: "Follow All Tournament Rules",
-      description:
-        "Follow all tournament rules and decisions made by the Tournament Organizer.",
-      icon: "clipboard",
-    },
-    {
-      id: "ready",
-      title: "All Teams Must Be Ready",
-      description:
-        "All teams must be ready at least 10 minutes before their scheduled match.",
-      icon: "clock",
-    },
-    {
-      id: "default-loss",
-      title: "Default Loss",
-      description:
-        "Teams that fail to complete their lineup or do not report within the allotted waiting time will automatically forfeit the match (Default Loss).",
-      icon: "x-circle",
-    },
-    {
-      id: "no-cheating",
-      title: "No Cheating",
-      description:
-        "The use of Map Hack, Scripts, Cheats, Exploits, Third-Party Apps, or any unfair advantage is strictly prohibited and will result in immediate disqualification.",
-      icon: "user-x",
-    },
-    {
-      id: "respect-everyone",
-      title: "Respect Everyone",
-      description:
-        "Respect all players, referees, organizers, and spectators. Toxic behavior, harassment, hate speech, and offensive language will not be tolerated.",
-      icon: "handshake",
-    },
-    {
-      id: "stable-internet",
-      title: "Stable Internet Required",
-      description:
-        "Stable internet connection is the responsibility of each player. Technical issues caused by a player's own connection may lead to a match loss or disqualification, depending on the situation.",
-      icon: "wifi",
-    },
-    {
-      id: "identity-verification",
-      title: "Identity Verification",
-      description:
-        "Players may be required to join a video call or enable their camera for identity verification and fair play.",
-      icon: "video",
-    },
-    {
-      id: "final-decision",
-      title:
-        "Organizer's Decision Is Final",
-      description:
-        "The Tournament Organizer's decision is final in all disputes and match rulings.",
-      icon: "scale",
-    },
-  ];
+  return TOURNAMENT_RULES.filter((rule) => rule.aboutSummary).map(
+    ({ id, title, description, icon }) => ({
+      id,
+      title,
+      description,
+      icon,
+    }),
+  );
 }

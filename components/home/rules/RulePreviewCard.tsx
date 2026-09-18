@@ -1,10 +1,17 @@
 import {
-  CheckCircle2,
-  Clock3,
+  CalendarClock,
+  Clock,
+  ClipboardCheck,
+  ClipboardList,
   Handshake,
-  ShieldCheck,
-  ShieldX,
+  Lock,
+  Scale,
+  Star,
+  UserX,
+  Video,
+  Wifi,
   XCircle,
+  type LucideIcon,
 } from "lucide-react";
 
 interface Rule {
@@ -17,32 +24,25 @@ interface RulePreviewCardProps {
   rule: Rule;
 }
 
-function getRuleIcon(icon: string) {
-  switch (icon) {
-    case "clock":
-      return Clock3;
-
-    case "x-circle":
-      return XCircle;
-
-    case "shield-x":
-      return ShieldX;
-
-    case "handshake":
-      return Handshake;
-
-    case "clipboard":
-      return CheckCircle2;
-
-    default:
-      return ShieldCheck;
-  }
-}
+const ICONS: Record<string, LucideIcon> = {
+  clipboard: ClipboardList,
+  clock: Clock,
+  "x-circle": XCircle,
+  "user-x": UserX,
+  handshake: Handshake,
+  wifi: Wifi,
+  video: Video,
+  scale: Scale,
+  "clipboard-check": ClipboardCheck,
+  "calendar-clock": CalendarClock,
+  lock: Lock,
+  star: Star,
+};
 
 export default function RulePreviewCard({
   rule,
 }: Readonly<RulePreviewCardProps>) {
-  const Icon = getRuleIcon(rule.icon);
+  const Icon = ICONS[rule.icon] ?? ClipboardList;
 
   return (
     <article

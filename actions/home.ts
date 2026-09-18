@@ -2,6 +2,7 @@
 
 import { getPublicRegistrationSettings } from "@/actions/registration";
 import { prisma } from "@/lib/prisma";
+import { TOURNAMENT_RULES } from "@/lib/rules-data";
 
 export interface HomepageData {
   hero: {
@@ -52,13 +53,14 @@ export async function getHomepageData(): Promise<HomepageData> {
 }
 
 export async function getHomepageRules(): Promise<RuleData[]> {
-  return [
-    { id: "follow-rules", title: "Follow Tournament Rules", description: "Follow all tournament rules and organizer decisions.", icon: "clipboard" },
-    { id: "ready", title: "Teams Must Be Ready", description: "Teams should be ready at least 10 minutes before the scheduled match.", icon: "clock" },
-    { id: "default-loss", title: "Default Loss", description: "Late or incomplete teams may receive a default loss.", icon: "x-circle" },
-    { id: "no-cheating", title: "No Cheating", description: "Cheating, scripting and exploits are strictly prohibited.", icon: "shield-x" },
-    { id: "respect", title: "Respect Everyone", description: "Respect players, referees, organizers and spectators.", icon: "handshake" },
-  ];
+  return TOURNAMENT_RULES.filter((rule) => rule.homepagePreview).map(
+    ({ id, title, description, icon }) => ({
+      id,
+      title,
+      description,
+      icon,
+    }),
+  );
 }
 
 export async function getFeaturedMatch() {

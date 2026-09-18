@@ -4,8 +4,10 @@ import {
   getWebsiteSettings,
   getSocialLinks,
 } from "@/actions/settings";
+import { getRegistrationSettings } from "@/actions/registration";
 
 import SettingsForm from "@/components/admin/settings/SettingsForm";
+import RegistrationSettingsForm from "@/components/admin/settings/RegistrationSettingsForm";
 
 export const metadata: Metadata = {
   title: "Settings",
@@ -14,9 +16,10 @@ export const metadata: Metadata = {
 export const revalidate = 30;
 
 export default async function SettingsPage() {
-  const [settings, socials] = await Promise.all([
+  const [settings, socials, registration] = await Promise.all([
     getWebsiteSettings(),
     getSocialLinks(),
+    getRegistrationSettings(),
   ]);
 
   return (
@@ -34,6 +37,8 @@ export default async function SettingsPage() {
           Site-wide info shown across the public pages - names, tagline, and social links.
         </p>
       </div>
+
+      <RegistrationSettingsForm initialSettings={registration} />
 
       <SettingsForm
         initialSettings={settings}

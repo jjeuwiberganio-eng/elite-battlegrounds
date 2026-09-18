@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://elitebattlegrounds.com"),
+  metadataBase: new URL("https://elite-battlegrounds-series.vercel.app"),
   title: {
     default: "Elite Battlegrounds Series",
     template: "%s | Elite Battlegrounds Series",
@@ -33,7 +33,7 @@ export const metadata: Metadata = {
     title: "Elite Battlegrounds Series",
     description:
       "Official website of the Elite Battlegrounds Series community tournament.",
-    url: "https://elitebattlegrounds.com",
+    url: "https://elite-battlegrounds-series.vercel.app",
   },
   twitter: {
     card: "summary_large_image",
