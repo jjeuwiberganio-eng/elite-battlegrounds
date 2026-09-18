@@ -61,13 +61,13 @@ export default function TournamentStatisticsSection({
           return (
             <div
               key={stat.label}
-              className="flex flex-col items-center rounded-xl border border-slate-100 bg-slate-50 px-3 py-6 text-center"
+              className="flex flex-col items-center rounded-xl border border-slate-100 bg-slate-50 px-3 py-6 text-center transition-all duration-200 hover:-translate-y-1 hover:border-amber-200 hover:bg-white hover:shadow-md"
             >
-              <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-amber-50 text-amber-500">
+              <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-amber-50 text-amber-500 ring-1 ring-amber-100">
                 <Icon className="h-5 w-5" />
               </div>
 
-              <p className="text-2xl font-black text-slate-900">
+              <p className="text-3xl font-black text-slate-900">
                 {stat.value}
               </p>
 

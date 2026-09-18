@@ -159,18 +159,30 @@ export default function StandingsTable({
               {rows.map((row, index) => (
                 <tr
                   key={row.id}
-                  className={`border-b border-slate-100 last:border-0 ${
+                  className={`group border-b border-slate-100 transition-colors last:border-0 hover:bg-amber-50/50 ${
                     index % 2 === 1
                       ? "bg-slate-50/60"
                       : "bg-white"
                   } ${
                     row.rank <= 2
-                      ? "border-l-4 border-l-amber-400"
+                      ? "border-l-4 border-l-amber-400 bg-amber-50/30"
                       : ""
                   }`}
                 >
-                  <td className="px-3 py-4 font-bold text-slate-500 sm:px-4">
-                    {row.rank}
+                  <td className="px-3 py-4 sm:px-4">
+                    <span
+                      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-black ${
+                        row.rank === 1
+                          ? "bg-gradient-to-br from-amber-300 to-amber-500 text-white shadow-sm ring-2 ring-amber-200"
+                          : row.rank === 2
+                            ? "bg-gradient-to-br from-slate-300 to-slate-400 text-white shadow-sm ring-2 ring-slate-200"
+                            : row.rank === 3
+                              ? "bg-gradient-to-br from-orange-300 to-orange-500 text-white shadow-sm ring-2 ring-orange-200"
+                              : "bg-slate-100 text-slate-500"
+                      }`}
+                    >
+                      {row.rank}
+                    </span>
                   </td>
 
                   <td className="px-3 py-4 sm:px-4">
@@ -201,8 +213,10 @@ export default function StandingsTable({
                     {row.gameLosses}
                   </td>
 
-                  <td className="px-3 py-4 text-center text-lg font-black text-amber-500 sm:px-4">
-                    {row.points}
+                  <td className="px-3 py-4 text-center sm:px-4">
+                    <span className="inline-flex min-w-[2.75rem] items-center justify-center rounded-lg bg-amber-100 px-2.5 py-1 text-base font-black text-amber-600 shadow-sm ring-1 ring-amber-200/70 transition-colors group-hover:bg-amber-200/70">
+                      {row.points}
+                    </span>
                   </td>
 
                   <td className="hidden px-4 py-4 text-center font-semibold text-slate-700 sm:table-cell">

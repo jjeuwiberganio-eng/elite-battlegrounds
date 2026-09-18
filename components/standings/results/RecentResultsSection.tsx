@@ -29,10 +29,12 @@ export default function RecentResultsSection({
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-6">
       <div className="mb-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <History className="h-4 w-4 text-amber-500" />
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-600 ring-1 ring-amber-200">
+            <History className="h-4 w-4" />
+          </div>
 
-          <h2 className="text-sm font-black uppercase tracking-wide text-slate-500">
+          <h2 className="text-sm font-black uppercase tracking-wide text-slate-900">
             Recent Match Results
           </h2>
         </div>
@@ -68,7 +70,7 @@ export default function RecentResultsSection({
             return (
               <div
                 key={match.id}
-                className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5 text-sm"
+                className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5 text-sm transition-colors hover:border-amber-200 hover:bg-amber-50/40"
               >
                 <div
                   className={`flex min-w-0 flex-1 items-center gap-2 ${
@@ -88,7 +90,7 @@ export default function RecentResultsSection({
                   </span>
                 </div>
 
-                <div className="flex shrink-0 items-center gap-1.5 font-black text-slate-900">
+                <div className="flex shrink-0 items-center gap-1.5 rounded-lg bg-white px-2.5 py-1 font-black text-slate-900 shadow-sm ring-1 ring-slate-200/70">
                   <span
                     className={
                       teamAWon

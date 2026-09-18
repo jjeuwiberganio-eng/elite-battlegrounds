@@ -36,10 +36,10 @@ export default function GroupTabs({
             key={group.id}
             href={`?group=${group.slug}`}
             scroll={false}
-            className={`flex-1 rounded-full border px-3 py-2 text-center text-xs font-bold uppercase tracking-wide transition-all sm:flex-none sm:px-5 sm:py-2.5 sm:text-sm ${
+            className={`flex-1 rounded-full border px-3 py-2 text-center text-xs font-bold uppercase tracking-wide transition-all duration-200 sm:flex-none sm:px-5 sm:py-2.5 sm:text-sm ${
               isActive
-                ? "border-amber-500 bg-amber-500 text-white shadow-sm"
-                : "border-slate-200 bg-white text-slate-600 hover:border-amber-300 hover:text-slate-900"
+                ? "border-amber-500 bg-amber-500 text-white shadow-lg shadow-amber-500/30"
+                : "border-slate-200 bg-white text-slate-600 hover:-translate-y-0.5 hover:border-amber-300 hover:text-slate-900 hover:shadow-sm"
             }`}
           >
             {group.name}
