@@ -46,21 +46,6 @@ export default function HeroSection({
             blur-3xl
           "
         />
-
-        <div
-          className="
-            pointer-events-none
-            absolute
-            left-0
-            top-0
-            h-full
-            w-[52%]
-            bg-gradient-to-r
-            from-white
-            via-white/95
-            to-transparent
-          "
-        />
       </div>
 
       <div
@@ -84,7 +69,36 @@ export default function HeroSection({
           lg:pt-40
         "
       >
-        <div className="w-full lg:w-[54%] lg:translate-x-2 lg:-translate-y-1">
+        {/*
+          Readability fade-mask - deliberately scoped to THIS max-w-[1280px]
+          centered container (same as the text below), not the full-bleed
+          section above. The artwork is positioned relative to the whole
+          browser window, but the text is centered in a fixed-width box, so
+          on wide screens those two coordinate systems drift apart - a mask
+          sized as a percentage of the full window stops lining up with
+          where the text actually is. Anchoring it here instead means it
+          always covers exactly the text's own footprint, at any width.
+        */}
+        <div
+          className="
+            pointer-events-none
+            absolute
+            inset-y-0
+            left-0
+            z-[1]
+            hidden
+            w-[95%]
+            bg-gradient-to-r
+            from-white
+            from-0%
+            via-white
+            via-85%
+            to-transparent
+            to-100%
+            lg:block
+          "
+        />
+        <div className="relative z-10 w-full lg:w-[54%] lg:translate-x-2 lg:-translate-y-1">
           <HeroContent hero={hero} tournament={tournament} />
         </div>
 
