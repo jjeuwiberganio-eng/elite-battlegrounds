@@ -67,12 +67,16 @@ export default function PlayoffQualifiersSection({
               }`}
             >
               <span
-                className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-black text-white ${
+                className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-black ${
                   seed === 1
-                    ? "bg-gradient-to-br from-amber-300 to-amber-600 shadow-md shadow-amber-500/40 ring-2 ring-amber-200"
-                    : qualifier
-                      ? "bg-gradient-to-br from-amber-400 to-amber-600 shadow-sm ring-2 ring-amber-200/70"
-                      : "bg-slate-300"
+                    ? "bg-gradient-to-br from-amber-300 to-amber-500 text-white shadow-md shadow-amber-500/40 ring-2 ring-amber-200"
+                    : seed === 2
+                      ? "bg-gradient-to-br from-slate-300 to-slate-400 text-white shadow-sm ring-2 ring-slate-200"
+                      : seed === 3
+                        ? "bg-gradient-to-br from-orange-300 to-orange-500 text-white shadow-sm ring-2 ring-orange-200"
+                        : qualifier
+                          ? "bg-gradient-to-br from-amber-400 to-amber-600 text-white shadow-sm ring-2 ring-amber-200/70"
+                          : "bg-slate-300 text-white"
                 }`}
               >
                 {seed}

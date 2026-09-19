@@ -48,7 +48,17 @@ export default function StandingsHeroSection({
             </span>
           </h1>
 
-          <p className="mt-2 text-sm text-slate-600 sm:mt-5 sm:text-lg">
+          {/* Gradient underline accent */}
+          <div className="mx-auto mt-3 h-1 w-24 rounded-full bg-gradient-to-r from-amber-300 via-amber-500 to-orange-500 sm:mt-4 sm:w-32" />
+
+          {/* Phase pill */}
+          <div className="mt-4 flex justify-center sm:mt-5">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 px-4 py-1.5 text-[10px] font-black uppercase tracking-wide text-white shadow-md shadow-amber-500/30 sm:text-xs">
+              Group Stage
+            </span>
+          </div>
+
+          <p className="mt-4 text-sm text-slate-600 sm:mt-5 sm:text-lg">
             Track the rankings of all
             competing teams.
           </p>
