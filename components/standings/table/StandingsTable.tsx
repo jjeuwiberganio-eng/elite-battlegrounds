@@ -73,7 +73,7 @@ export default function StandingsTable({
   // actually visible (naturally hides itself while searching narrows
   // the list past the cutoff).
   const cutoffIndex = rows.findIndex(
-    (row) => row.rank > 2,
+    (row) => row.rank > 3,
   );
   const showCutoff = cutoffIndex > 0;
 
@@ -121,7 +121,7 @@ export default function StandingsTable({
 
                 <div
                   className={`overflow-hidden rounded-2xl border shadow-sm ${
-                    row.rank <= 2
+                    row.rank <= 3
                       ? "border-amber-300 bg-amber-50/30"
                       : "border-slate-200 bg-white"
                   }`}
@@ -301,7 +301,7 @@ export default function StandingsTable({
                           ? "bg-slate-50/60"
                           : "bg-white"
                       } ${
-                        row.rank <= 2
+                        row.rank <= 3
                           ? "border-l-4 border-l-amber-400 bg-amber-50/30"
                           : ""
                       }`}

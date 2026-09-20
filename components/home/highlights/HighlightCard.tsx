@@ -32,21 +32,14 @@ export default function HighlightCard({
   const [modalOpen, setModalOpen] =
     useState(false);
 
-  const Wrapper = isVideo
-    ? "button"
-    : "article";
-
-  const wrapperProps = isVideo
-    ? {
-        type: "button" as const,
-        onClick: () =>
-          setModalOpen(true),
-      }
-    : {};
+  const wrapperProps = {
+    type: "button" as const,
+    onClick: () => setModalOpen(true),
+  };
 
   return (
     <>
-      <Wrapper
+      <button
         {...wrapperProps}
         className="group relative min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-950 text-left"
       >
@@ -182,7 +175,7 @@ export default function HighlightCard({
             group-hover:w-full
           "
         />
-      </Wrapper>
+      </button>
 
       {isVideo && modalOpen && (
         <div
@@ -218,6 +211,58 @@ export default function HighlightCard({
                 controls
                 autoPlay
                 className="rounded-xl bg-black"
+                style={{
+                  display: "block",
+                  maxHeight: "80vh",
+                  maxWidth: "85vw",
+                  width: "auto",
+                  height: "auto",
+                  objectFit: "contain",
+                }}
+              />
+
+              <p className="mt-3 text-center text-sm font-bold uppercase tracking-wide text-white">
+                {highlight.title}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {!isVideo && modalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4"
+          onClick={() =>
+            setModalOpen(false)
+          }
+        >
+          <div
+            className="flex max-h-[90vh] max-w-[90vw] justify-center"
+            onClick={(event) =>
+              event.stopPropagation()
+            }
+          >
+            <div
+              className="relative"
+              style={{
+                display: "inline-block",
+              }}
+            >
+              <button
+                type="button"
+                onClick={() =>
+                  setModalOpen(false)
+                }
+                className="absolute -top-11 right-0 flex h-9 w-9 items-center justify-center rounded-full border border-white/20 text-white transition hover:bg-white/10"
+              >
+                <X className="h-5 w-5" />
+              </button>
+
+              {/* eslint-disable-next-line @next/next/no-img-element -- modal shows the image at its natural size, capped by viewport, same as the video element above */}
+              <img
+                src={highlight.mediaUrl}
+                alt={highlight.title}
+                className="rounded-xl"
                 style={{
                   display: "block",
                   maxHeight: "80vh",
