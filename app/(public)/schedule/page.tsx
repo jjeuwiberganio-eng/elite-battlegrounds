@@ -32,7 +32,7 @@ export default async function SchedulePage() {
   ]);
 
 return (
- <div style={{ paddingTop: "110px" }}>
+ <div>
 
     <ScheduleHeroSection
       tournament={tournament}
