@@ -71,6 +71,17 @@ export default function HeroSection({
         <div className="absolute inset-y-0 left-0 w-[64%] bg-gradient-to-r from-white from-0% via-white via-[58%] to-transparent" />
       </div>
 
+      {/*
+        Top fade - full section width (not confined to the 1280px content
+        container), covering roughly the Navbar's own height (h-40 matches
+        the lg:pt-40 used below). The floating Navbar uses a WIDER max-w-1500
+        container than this content column's max-w-1280, so without this the
+        artwork could still show unmasked directly behind the nav's
+        rightmost links on some window widths. This keeps that whole band
+        consistently light regardless of horizontal position.
+      */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 hidden h-40 bg-gradient-to-b from-white from-0% via-white/60 via-[55%] to-transparent lg:block" />
+
       <div
         className="
           relative
