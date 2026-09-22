@@ -64,7 +64,7 @@ export default function HighlightsSection({
                 </Link>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                 {posterItems.map((item) => (
                   <HighlightCard
                     key={item.id}
@@ -91,7 +91,7 @@ export default function HighlightsSection({
                 </Link>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                 {videoItems.map((item) => (
                   <HighlightCard
                     key={item.id}

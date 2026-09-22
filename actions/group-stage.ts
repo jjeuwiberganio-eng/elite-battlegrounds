@@ -21,12 +21,13 @@ export async function getGroupStageMatches() {
               matches: {
                 where: {
                   status: {
-                    not: "DRAFT",
+                    notIn: ["DRAFT", "COMPLETED"],
                   },
                 },
                 orderBy: {
-                  matchNumber: "asc",
+                  scheduledAt: "asc",
                 },
+                take: 4,
                 include: {
                   participants: {
                     include: {

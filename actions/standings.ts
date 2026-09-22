@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 
 /*
@@ -322,7 +323,6 @@ export interface TournamentStatistics {
   totalTeams: number;
   matchesPlayed: number;
   totalGames: number;
-  avgGameDuration: string;
 }
 
 export async function getTournamentStatistics(): Promise<TournamentStatistics> {
@@ -333,14 +333,13 @@ export async function getTournamentStatistics(): Promise<TournamentStatistics> {
       totalTeams: 0,
       matchesPlayed: 0,
       totalGames: 0,
-      avgGameDuration: "0m 0s",
     };
   }
 
   const [
     totalTeams,
     matchesPlayed,
-    games,
+    gamesPlayed,
   ] = await Promise.all([
     prisma.tournamentRegistration.count({
       where: {
@@ -358,7 +357,15 @@ export async function getTournamentStatistics(): Promise<TournamentStatistics> {
       },
     }),
 
-    prisma.matchGame.findMany({
+    /*
+     * "Total Games" used to read from MatchGame, a table meant to hold
+     * one row per individual game within a Best-of-N match - but
+     * nothing in the admin UI ever creates those rows, so this was
+     * always stuck at zero. Instead, sum MatchParticipant.score across
+     * completed matches: that's the data Record Result actually
+     * writes, so a 2-1 result correctly contributes 3 games.
+     */
+    prisma.matchParticipant.aggregate({
       where: {
         match: {
           tournamentStage: {
@@ -366,41 +373,17 @@ export async function getTournamentStatistics(): Promise<TournamentStatistics> {
           },
           status: "COMPLETED",
         },
-        durationSeconds: {
-          not: null,
-        },
       },
-      select: {
-        durationSeconds: true,
+      _sum: {
+        score: true,
       },
     }),
   ]);
 
-  const totalGames = games.length;
-
-  const avgSeconds =
-    totalGames > 0
-      ? Math.round(
-          games.reduce(
-            (sum, game) =>
-              sum +
-              (game.durationSeconds ?? 0),
-            0,
-          ) / totalGames,
-        )
-      : 0;
-
-  const minutes = Math.floor(
-    avgSeconds / 60,
-  );
-
-  const seconds = avgSeconds % 60;
-
   return {
     totalTeams,
     matchesPlayed,
-    totalGames,
-    avgGameDuration: `${minutes}m ${seconds}s`,
+    totalGames: gamesPlayed._sum.score ?? 0,
   };
 }
 
@@ -751,6 +734,9 @@ export async function recalculateStandings(): Promise<{
       });
     }),
   );
+
+  revalidatePath("/standings");
+  revalidatePath("/admin/standings");
 
   return {
     success: true,

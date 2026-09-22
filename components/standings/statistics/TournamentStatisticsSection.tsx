@@ -2,14 +2,12 @@ import {
   Users,
   Swords,
   Gamepad2,
-  Timer,
 } from "lucide-react";
 
 interface TournamentStatistics {
   totalTeams: number;
   matchesPlayed: number;
   totalGames: number;
-  avgGameDuration: string;
 }
 
 interface TournamentStatisticsSectionProps {
@@ -35,11 +33,6 @@ export default function TournamentStatisticsSection({
       value: statistics.totalGames,
       icon: Gamepad2,
     },
-    {
-      label: "Avg Game Duration",
-      value: statistics.avgGameDuration,
-      icon: Timer,
-    },
   ];
 
   return (
@@ -54,7 +47,7 @@ export default function TournamentStatisticsSection({
         <div className="h-px flex-1 bg-amber-200" />
       </div>
 
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <div className="grid grid-cols-3 gap-4">
         {stats.map((stat) => {
           const Icon = stat.icon;
 

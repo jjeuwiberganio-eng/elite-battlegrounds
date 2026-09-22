@@ -1,6 +1,5 @@
 import Image from "next/image";
 
-import HeroBackground from "./HeroBackground";
 import HeroContent from "./HeroContent";
 
 interface HeroSectionProps {
@@ -23,31 +22,6 @@ export default function HeroSection({
 }: Readonly<HeroSectionProps>) {
   return (
     <section className="relative isolate overflow-hidden bg-white lg:min-h-[680px]">
-      {/*
-        Desktop: full-bleed artwork behind the typography.
-        Hidden on mobile, where the artwork gets its own compact panel below
-        instead (object-cover object-center used to crop straight past the
-        emblem, which sits on the left of hero-bg.jpg).
-      */}
-      <div className="hidden lg:block">
-        <HeroBackground image={hero.backgroundImage} />
-
-        <div
-          className="
-            pointer-events-none
-            absolute
-            left-[-180px]
-            top-1/2
-            h-[520px]
-            w-[520px]
-            -translate-y-1/2
-            rounded-full
-            bg-amber-500/[0.06]
-            blur-3xl
-          "
-        />
-      </div>
-
       <div
         className="
           relative
@@ -70,34 +44,48 @@ export default function HeroSection({
         "
       >
         {/*
-          Readability fade-mask - deliberately scoped to THIS max-w-[1280px]
-          centered container (same as the text below), not the full-bleed
-          section above. The artwork is positioned relative to the whole
-          browser window, but the text is centered in a fixed-width box, so
-          on wide screens those two coordinate systems drift apart - a mask
-          sized as a percentage of the full window stops lining up with
-          where the text actually is. Anchoring it here instead means it
-          always covers exactly the text's own footprint, at any width.
+          Desktop artwork - a fixed-size box docked to this SAME 1280px
+          container's own right edge (not the full browser window). Anchoring
+          it to the container the text also lives in means their relative
+          positions never drift apart, at any screen width from 1024px up to
+          a 4K monitor - unlike a full-bleed image positioned via the raw
+          viewport width, which requires the emblem to be masked with math
+          that only holds at one specific width.
         */}
+        <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-[440px] overflow-hidden lg:block xl:w-[560px]">
+          <Image
+            src={hero.backgroundImage}
+            alt=""
+            fill
+            priority
+            sizes="560px"
+            className="object-cover object-left"
+          />
+
+          {/* Soft fade on this box's own left edge, blending into the white
+              page background - no longer needs to track the text's position
+              at all, since the box itself is already placed safely clear
+              of the text column. */}
+          <div className="pointer-events-none absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-white to-transparent" />
+        </div>
+
         <div
           className="
             pointer-events-none
             absolute
-            inset-y-0
-            left-0
-            z-[1]
+            left-[-180px]
+            top-1/2
             hidden
-            w-[95%]
-            bg-gradient-to-r
-            from-white
-            from-0%
-            via-white
-            via-85%
-            to-transparent
-            to-100%
+            h-[520px]
+            w-[520px]
+            -translate-y-1/2
+            rounded-full
+            bg-amber-500/[0.06]
+            blur-3xl
             lg:block
           "
         />
+
         <div className="relative z-10 w-full lg:w-[54%] lg:translate-x-2 lg:-translate-y-1">
           <HeroContent hero={hero} tournament={tournament} />
         </div>

@@ -130,18 +130,18 @@ export default function UpcomingMatchSection({
 
   if (!selectedMatch) {
     return (
-      <section className="bg-slate-950 py-8 sm:py-16">
+      <section className="bg-white py-8 sm:py-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="rounded-2xl border border-white/10 bg-slate-900 p-5 text-center sm:rounded-3xl sm:p-10">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-400 sm:text-xs sm:tracking-[0.3em]">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 text-center sm:rounded-3xl sm:p-10">
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-600 sm:text-xs sm:tracking-[0.3em]">
               Upcoming Match
             </p>
 
-            <h2 className="mt-2 text-xl font-black uppercase text-white sm:mt-3 sm:text-3xl">
+            <h2 className="mt-2 text-xl font-black uppercase text-slate-900 sm:mt-3 sm:text-3xl">
               No Matches Scheduled
             </h2>
 
-            <p className="mx-auto mt-2 max-w-md text-xs leading-5 text-slate-400 sm:mt-3 sm:text-sm sm:leading-6">
+            <p className="mx-auto mt-2 max-w-md text-xs leading-5 text-slate-500 sm:mt-3 sm:text-sm sm:leading-6">
               Matches will appear here when they are
               added by the tournament administrator.
             </p>

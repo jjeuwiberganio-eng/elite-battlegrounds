@@ -63,14 +63,3 @@ export async function getHomepageRules(): Promise<RuleData[]> {
   );
 }
 
-export async function getFeaturedMatch() {
-  return null;
-}
-
-export async function getUpcomingMatch() {
-  const match = await prisma.match.findFirst({
-    where: { status: { not: "DRAFT" } },
-    orderBy: { scheduledAt: "asc" },
-  });
-  return match;
-}

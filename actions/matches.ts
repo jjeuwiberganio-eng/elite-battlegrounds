@@ -355,6 +355,157 @@ export async function deleteMatch(
 
 /*
 |--------------------------------------------------------------------------
+| Update Match (schedule / format / stream / schedule day)
+|--------------------------------------------------------------------------
+| Deliberately does NOT touch team assignments or match number. Changing
+| opponents on an existing match would mean re-resolving
+| TournamentRegistration IDs and rewriting MatchParticipant rows - for
+| that case, delete and recreate the match instead.
+|
+| Only fields that are passed (not undefined) are updated.
+|
+| scheduledAt must be a full ISO string (with timezone / "Z"). The admin
+| form converts the browser's datetime-local value with .toISOString()
+| before calling this, so the server never has to guess a timezone.
+*/
+export async function updateMatch(
+  matchId: string,
+  data: {
+    scheduledAt?: string;
+    bestOf?: "BO1" | "BO3" | "BO5" | "BO7";
+    streamUrl?: string | null;
+    scheduleDayId?: string | null;
+  },
+) {
+  await requireRole(USER_ROLES.SUPER_ADMIN);
+
+  if (!matchId) {
+    throw new Error("Match ID is required.");
+  }
+
+  const match = await prisma.match.findUnique({
+    where: {
+      id: matchId,
+    },
+
+    select: {
+      id: true,
+      tournamentStageId: true,
+
+      tournamentStage: {
+        select: {
+          id: true,
+          slug: true,
+          tournamentId: true,
+        },
+      },
+    },
+  });
+
+  if (!match) {
+    throw new Error("Match not found.");
+  }
+
+  const updateData: {
+    scheduledAt?: Date;
+    bestOf?: "BO1" | "BO3" | "BO5" | "BO7";
+    streamUrl?: string | null;
+    scheduleDayId?: string | null;
+  } = {};
+
+  if (data.scheduledAt !== undefined) {
+    const scheduledAt = new Date(data.scheduledAt);
+
+    if (Number.isNaN(scheduledAt.getTime())) {
+      throw new Error("Invalid scheduled date and time.");
+    }
+
+    updateData.scheduledAt = scheduledAt;
+  }
+
+  if (data.bestOf !== undefined) {
+    if (!["BO1", "BO3", "BO5", "BO7"].includes(data.bestOf)) {
+      throw new Error("Invalid match format.");
+    }
+
+    updateData.bestOf = data.bestOf;
+  }
+
+  if (data.streamUrl !== undefined) {
+    const streamUrl = data.streamUrl?.trim() ?? "";
+
+    if (streamUrl) {
+      try {
+        new URL(streamUrl);
+      } catch {
+        throw new Error("Please enter a valid stream URL.");
+      }
+    }
+
+    updateData.streamUrl = streamUrl || null;
+  }
+
+  if (data.scheduleDayId !== undefined) {
+    const isGroupStage =
+      match.tournamentStage.slug.trim().toLowerCase() ===
+      "group-stage";
+
+    if (data.scheduleDayId) {
+      const scheduleDay =
+        await prisma.tournamentScheduleDay.findFirst({
+          where: {
+            id: data.scheduleDayId,
+            stageId: match.tournamentStage.id,
+            tournamentId: match.tournamentStage.tournamentId,
+          },
+
+          select: {
+            id: true,
+          },
+        });
+
+      if (!scheduleDay) {
+        throw new Error(
+          "Selected schedule day does not belong to this match's stage.",
+        );
+      }
+
+      updateData.scheduleDayId = scheduleDay.id;
+    } else if (isGroupStage) {
+      throw new Error(
+        "Schedule day is required for Group Stage matches.",
+      );
+    } else {
+      updateData.scheduleDayId = null;
+    }
+  }
+
+  if (Object.keys(updateData).length === 0) {
+    return {
+      success: true,
+    };
+  }
+
+  await prisma.match.update({
+    where: {
+      id: matchId,
+    },
+
+    data: updateData,
+  });
+
+  revalidatePath("/admin/matches");
+  revalidatePath("/admin/schedule/matches");
+  revalidatePath("/schedule");
+  revalidatePath("/");
+
+  return {
+    success: true,
+  };
+}
+
+/*
+|--------------------------------------------------------------------------
 | Record / Reset Match Result
 |--------------------------------------------------------------------------
 | This is the one place that decides who won a match. Nothing in the

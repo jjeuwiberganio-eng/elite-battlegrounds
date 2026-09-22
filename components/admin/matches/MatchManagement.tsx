@@ -13,6 +13,7 @@ import MatchForm, {
 
 import AddScheduleDayButton from "@/components/schedule/AddScheduleDayButton";
 import RecordResultForm from "@/components/admin/matches/RecordResultForm";
+import MatchEditForm from "@/components/admin/matches/MatchEditForm";
 
 interface TeamOption {
   id: string;
@@ -107,6 +108,12 @@ export default function MatchManagement({
   const [error, setError] =
     useState<string | null>(null);
 
+  /*
+   * Which match (if any) is currently open in the inline editor.
+   */
+  const [editingMatchId, setEditingMatchId] =
+    useState<string | null>(null);
+
   async function handleCreateMatch(
     values: MatchFormValues,
   ) {
@@ -134,8 +141,18 @@ export default function MatchManagement({
         bestOf:
           values.bestOf,
 
+        /*
+         * datetime-local returns a timezone-less string. The server
+         * (Vercel) runs in UTC, so convert here in the browser, where
+         * the real local timezone is known, and send a full UTC ISO
+         * string instead.
+         */
         scheduledAt:
-          values.scheduledAt || undefined,
+          values.scheduledAt
+            ? new Date(
+                values.scheduledAt,
+              ).toISOString()
+            : undefined,
 
         /*
          * Your current form calls this "referee".
@@ -476,6 +493,24 @@ export default function MatchManagement({
                         type="button"
                         disabled={loading}
                         onClick={() =>
+                          setEditingMatchId(
+                            editingMatchId ===
+                              match.id
+                              ? null
+                              : match.id,
+                          )
+                        }
+                        className="w-full rounded-xl border border-amber-500/30 px-5 py-3 text-sm font-bold text-amber-400 transition hover:bg-amber-500/10 disabled:cursor-not-allowed disabled:opacity-50 lg:w-auto"
+                      >
+                        {editingMatchId === match.id
+                          ? "Close Editor"
+                          : "Edit Match"}
+                      </button>
+
+                      <button
+                        type="button"
+                        disabled={loading}
+                        onClick={() =>
                           handleDeleteMatch(
                             match.id,
                           )
@@ -501,6 +536,30 @@ export default function MatchManagement({
                       </button>
                     </div>
                   </div>
+
+                  {/* Inline editor */}
+                  {editingMatchId === match.id && (
+                    <div className="mt-6">
+                      <MatchEditForm
+                        match={match}
+                        scheduleDays={scheduleDays}
+                        showScheduleDay={
+                          Boolean(match.scheduleDay) ||
+                          match.tournamentStage.name
+                            .trim()
+                            .toLowerCase() ===
+                            "group stage"
+                        }
+                        onCancel={() =>
+                          setEditingMatchId(null)
+                        }
+                        onSaved={() => {
+                          setEditingMatchId(null);
+                          window.location.reload();
+                        }}
+                      />
+                    </div>
+                  )}
                 </article>
               );
             })}
