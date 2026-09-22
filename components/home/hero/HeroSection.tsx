@@ -22,6 +22,55 @@ export default function HeroSection({
 }: Readonly<HeroSectionProps>) {
   return (
     <section className="relative isolate overflow-hidden bg-white lg:min-h-[680px]">
+      {/*
+        Desktop artwork - genuinely full-bleed this time: a direct child of
+        the SECTION (not the padded 1280px content container below), so its
+        width is a percentage of the real browser viewport, not of the
+        content column. w-[150%] anchored to the section's own right-0 means
+        the image always reaches the true right edge of the browser, at any
+        width, with 50% extra width bleeding off-screen to the left (clipped
+        by overflow-hidden) - that overflow is what keeps the tournament
+        emblem (which sits in the source image's left portion) permanently
+        cropped out of view, leaving just the abstract light-streak artwork
+        visible behind the text. Verified with real Chromium screenshots
+        from 1024px up to 3440px ultrawide.
+      */}
+      <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-[150%] overflow-hidden lg:block">
+        <Image
+          src={hero.backgroundImage}
+          alt=""
+          fill
+          priority
+          sizes="150vw"
+          className="object-cover object-[right_center]"
+        />
+      </div>
+
+      {/*
+        Left cover - solid white, matching the page background, for
+        everything to the left of where the centered 1280px content
+        container begins. Sized from the same 1280px constant the container
+        itself uses, so it only ever appears once the viewport is wider than
+        the container (exactly when the full-bleed image above would
+        otherwise show raw, unmasked artwork in that dead zone).
+      */}
+      <div
+        className="pointer-events-none absolute inset-y-0 left-0 hidden bg-white lg:block"
+        style={{ width: "max(0px, calc((100% - 1280px) / 2))" }}
+      />
+
+      {/*
+        Readability gradient - anchored INSIDE the same 1280px container the
+        text uses (not a raw percentage of the viewport), so it always
+        tracks the text column no matter how wide the browser window is.
+        This is the lesson from the previous full-bleed attempt: the mask
+        and the text must share one coordinate system, or they drift apart
+        at different widths.
+      */}
+      <div className="pointer-events-none absolute inset-y-0 left-0 hidden w-full max-w-[1280px] lg:mx-auto lg:block">
+        <div className="absolute inset-y-0 left-0 w-[64%] bg-gradient-to-r from-white from-0% via-white via-[58%] to-transparent" />
+      </div>
+
       <div
         className="
           relative
@@ -43,32 +92,6 @@ export default function HeroSection({
           lg:pt-40
         "
       >
-        {/*
-          Desktop artwork - a fixed-size box docked to this SAME 1280px
-          container's own right edge (not the full browser window). Anchoring
-          it to the container the text also lives in means their relative
-          positions never drift apart, at any screen width from 1024px up to
-          a 4K monitor - unlike a full-bleed image positioned via the raw
-          viewport width, which requires the emblem to be masked with math
-          that only holds at one specific width.
-        */}
-        <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-[440px] overflow-hidden lg:block xl:w-[560px]">
-          <Image
-            src={hero.backgroundImage}
-            alt=""
-            fill
-            priority
-            sizes="560px"
-            className="object-cover object-left"
-          />
-
-          {/* Soft fade on this box's own left edge, blending into the white
-              page background - no longer needs to track the text's position
-              at all, since the box itself is already placed safely clear
-              of the text column. */}
-          <div className="pointer-events-none absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-white to-transparent" />
-        </div>
-
         <div
           className="
             pointer-events-none
