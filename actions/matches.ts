@@ -140,6 +140,14 @@ export async function createMatch(data: {
   refereeId?: string;
   streamUrl?: string;
   scheduleDayId?: string;
+  /*
+   * The create form's own "upcoming" / "live" / "completed" labels -
+   * mapped to a real MatchStatus below. Optional and defaults to
+   * "upcoming" (-> READY) rather than relying on Prisma's own column
+   * default (DRAFT), since a match an admin just finished scheduling is
+   * ready to show on the site, not still being drafted.
+   */
+  status?: "upcoming" | "live" | "completed";
 }) {
   await requireRole(USER_ROLES.SUPER_ADMIN);
 
@@ -258,6 +266,12 @@ if (isGroupStage) {
     );
   }
 
+  const statusMap = {
+    upcoming: "READY",
+    live: "LIVE",
+    completed: "COMPLETED",
+  } as const;
+
   const match = await prisma.match.create({
     data: {
       matchNumber: data.matchNumber,
@@ -268,6 +282,9 @@ if (isGroupStage) {
         data.tournamentStageId,
 
       scheduleDayId,
+
+      status:
+        statusMap[data.status ?? "upcoming"],
 
       bestOf: data.bestOf,
 

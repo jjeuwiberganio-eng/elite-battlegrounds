@@ -170,6 +170,9 @@ export default function MatchManagement({
          */
         streamUrl:
           values.streamUrl || undefined,
+
+        status:
+          values.status,
       });
 
       setMessage(
