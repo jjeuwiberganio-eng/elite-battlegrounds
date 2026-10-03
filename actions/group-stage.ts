@@ -27,7 +27,16 @@ export async function getGroupStageMatches() {
                 orderBy: {
                   scheduledAt: "asc",
                 },
-                take: 4,
+                /*
+                 * No `take` here anymore - this used to cap at 4 on its
+                 * own, but that's now wrong because the home page
+                 * merges this with playoff matches (see
+                 * getUpcomingPlayoffMatches) and picks the 4 soonest
+                 * across BOTH. Capping here first could silently drop
+                 * a group-stage match that's actually sooner than a
+                 * playoff one just because it didn't make this
+                 * stage-only top-4.
+                 */
                 include: {
                   participants: {
                     include: {

@@ -6,6 +6,7 @@ import {
 } from "@/actions/home";
 import { getHomepageHighlights } from "@/actions/highlights";
 import { getGroupStageMatches } from "@/actions/group-stage";
+import { getUpcomingPlayoffMatches } from "@/actions/schedule";
 import { getPublicRegistrationSettings } from "@/actions/registration";
 
 import HeroSection from "@/components/home/hero/HeroSection";
@@ -29,14 +30,57 @@ export default async function HomePage() {
     highlights,
     rules,
     groupStageMatches,
+    playoffMatches,
     registration,
   ] = await Promise.all([
     getHomepageData(),
     getHomepageHighlights(),
     getHomepageRules(),
     getGroupStageMatches(),
+    getUpcomingPlayoffMatches(),
     getPublicRegistrationSettings(),
   ]);
+
+  /*
+   * Group-stage matches carry `scheduledAt`; playoff matches carry
+   * `startTime` instead - the two result shapes genuinely don't
+   * overlap on this field, so this reads whichever one the object
+   * actually has rather than accessing a field that may not exist on
+   * it.
+   */
+  function getMatchTime(
+    match:
+      | (typeof groupStageMatches)[number]
+      | (typeof playoffMatches)[number],
+  ) {
+    return "scheduledAt" in match
+      ? match.scheduledAt
+      : match.startTime;
+  }
+
+  /*
+   * "Upcoming Matches" should be the 4 soonest matches site-wide, not
+   * just the 4 soonest group-stage ones - a Grand Final or other
+   * playoff match belongs here too. Both queries already exclude
+   * DRAFT/COMPLETED matches on their own; this just merges the two
+   * stage-specific lists into one, sorts by time, and caps it at 4.
+   */
+  const upcomingMatches = [
+    ...groupStageMatches,
+    ...playoffMatches,
+  ]
+    .sort((a, b) => {
+      const timeA = new Date(
+        getMatchTime(a) ?? "",
+      ).getTime();
+
+      const timeB = new Date(
+        getMatchTime(b) ?? "",
+      ).getTime();
+
+      return timeA - timeB;
+    })
+    .slice(0, 4);
 
     const heroTournament = {
       ...homepage.tournament,
@@ -96,7 +140,7 @@ export default async function HomePage() {
       />
 
       {/* Upcoming Match */}
-      <UpcomingMatchSection matches={groupStageMatches} />
+      <UpcomingMatchSection matches={upcomingMatches} />
 
       {/* Highlights */}
       <HighlightsSection
