@@ -195,7 +195,7 @@ export default function AdminDashboardPage() {
           <span className="text-slate-500">
             Not Ready
           </span>{" "}
-          aren't wired up yet.
+          aren&apos;t wired up yet.
         </p>
       </div>
 

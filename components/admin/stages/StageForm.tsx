@@ -327,7 +327,7 @@ export default function StageForm({
 
           <span className="mt-1 block text-sm text-slate-500">
             Mark this stage as the
-            tournament's final stage.
+            tournament&apos;s final stage.
           </span>
         </span>
       </label>

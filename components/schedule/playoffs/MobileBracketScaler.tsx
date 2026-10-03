@@ -33,9 +33,16 @@ export default function MobileBracketScaler({
   const scaleRef = useRef(scale);
   const translateRef = useRef(translate);
   const fitScaleRef = useRef(fitScale);
-  scaleRef.current = scale;
-  translateRef.current = translate;
-  fitScaleRef.current = fitScale;
+
+  // Keep the live refs in sync AFTER each commit, not during render -
+  // mutating a ref's .current while the component function is running
+  // is unsafe under React's concurrent rendering (the function can run
+  // more than once per commit), even though it works today.
+  useEffect(() => {
+    scaleRef.current = scale;
+    translateRef.current = translate;
+    fitScaleRef.current = fitScale;
+  }, [scale, translate, fitScale]);
 
   const maxScaleRef = useRef(1);
 

@@ -25,7 +25,7 @@ export default async function LivestreamPage() {
         </h1>
 
         <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
-          Control which match shows as live across the site - the navbar's LIVE NOW button reads directly from this.
+          Control which match shows as live across the site - the navbar&apos;s LIVE NOW button reads directly from this.
         </p>
       </div>
 

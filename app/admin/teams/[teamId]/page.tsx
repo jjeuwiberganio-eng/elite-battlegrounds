@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { getTeamById } from "@/actions/teams";
@@ -32,21 +33,21 @@ export default async function EditTeamPage({
 
       <div>
         <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500">
-          <a
+          <Link
             href="/admin"
             className="transition hover:text-amber-400"
           >
             Dashboard
-          </a>
+          </Link>
 
           <span>/</span>
 
-          <a
+          <Link
             href="/admin/teams"
             className="transition hover:text-amber-400"
           >
             Teams
-          </a>
+          </Link>
 
           <span>/</span>
 
@@ -65,7 +66,7 @@ export default async function EditTeamPage({
           </h1>
 
           <p className="mt-2 text-sm text-slate-400">
-            Update the team's information, group,
+            Update the team&apos;s information, group,
             poster, logo, and roster.
           </p>
         </div>

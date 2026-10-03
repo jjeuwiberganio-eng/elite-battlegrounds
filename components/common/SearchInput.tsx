@@ -21,9 +21,20 @@ export default function SearchInput({
 }: Readonly<SearchInputProps>) {
   const [query, setQuery] = useState(value);
 
-  useEffect(() => {
+  /*
+   * Resync from the `value` prop when it changes externally (e.g. the
+   * parent clears the filter) - adjusted directly during render rather
+   * than via an effect, per React's own guidance for this exact case:
+   * https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
+   * This avoids an extra render showing the stale query before an
+   * effect would have corrected it.
+   */
+  const [prevValue, setPrevValue] = useState(value);
+
+  if (value !== prevValue) {
+    setPrevValue(value);
     setQuery(value);
-  }, [value]);
+  }
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {

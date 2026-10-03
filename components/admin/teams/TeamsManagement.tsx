@@ -137,21 +137,11 @@ export default function TeamsManagement({
                   All Groups
                 </option>
 
-                <option value="Group A">
-                  Group A
-                </option>
-
-                <option value="Group B">
-                  Group B
-                </option>
-
-                <option value="Group C">
-                  Group C
-                </option>
-
-                <option value="Group D">
-                  Group D
-                </option>
+                {groups.map((group) => (
+                  <option key={group} value={group}>
+                    {group}
+                  </option>
+                ))}
               </select>
             </div>
 

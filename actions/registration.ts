@@ -89,7 +89,7 @@ export async function updateRegistrationSettings(data: {
     );
   }
 
-  let registrationUrl =
+  const registrationUrl =
     data.registrationUrl?.trim() || null;
 
   if (registrationUrl) {

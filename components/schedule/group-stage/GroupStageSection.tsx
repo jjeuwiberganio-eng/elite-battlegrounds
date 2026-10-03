@@ -4,7 +4,7 @@ import {
   CalendarDays,
   Clock3,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 interface Match {
   id: string;
@@ -39,36 +39,27 @@ interface GroupStageSectionProps {
 export default function GroupStageSection({
   days,
 }: Readonly<GroupStageSectionProps>) {
-  const [selectedDayId, setSelectedDayId] =
+  const [requestedDayId, setSelectedDayId] =
     useState<string | null>(
       days[0]?.id ?? null,
     );
 
   /*
-   * If the database data changes,
-   * make sure the selected day still exists.
+   * Derived, not synced via an effect: if the requested day no longer
+   * exists in the current data (e.g. an admin deleted it, or this is
+   * the first render), fall back to the first available day - this
+   * recomputes automatically in the same render whenever `days` or
+   * `requestedDayId` changes, instead of rendering stale state for one
+   * pass and then correcting it a tick later via setState-in-effect.
    */
-  useEffect(() => {
-    if (days.length === 0) {
-      setSelectedDayId(null);
-      return;
-    }
+  const selectedDay =
+    days.find(
+      (day) =>
+        day.id === requestedDayId,
+    ) ?? days[0];
 
-    const selectedDayStillExists =
-      days.some(
-        (day) =>
-          day.id === selectedDayId,
-      );
-
-    if (!selectedDayStillExists) {
-      setSelectedDayId(days[0].id);
-    }
-  }, [days, selectedDayId]);
-
-  const selectedDay = days.find(
-    (day) =>
-      day.id === selectedDayId,
-  );
+  const selectedDayId =
+    selectedDay?.id ?? null;
 
   return (
     <section className="bg-white py-14">

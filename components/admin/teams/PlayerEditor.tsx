@@ -138,7 +138,7 @@ export default function PlayerEditor({
           </h2>
 
           <p className="mt-1 text-sm text-slate-400">
-            Add the team's players using their IGN and
+            Add the team&apos;s players using their IGN and
             tournament role.
           </p>
         </div>
@@ -156,7 +156,7 @@ export default function PlayerEditor({
             </p>
 
             <p className="mt-1 text-sm text-slate-500">
-              Add the team's players below.
+              Add the team&apos;s players below.
             </p>
           </div>
         )}

@@ -86,6 +86,14 @@ export default function CountdownTimer({
   );
 
   useEffect(() => {
+    /*
+     * Recompute immediately when targetDate changes, rather than
+     * waiting up to 1s for the first interval tick - necessary here
+     * since the value depends on Date.now(), which can't be computed
+     * purely during render (unlike GroupStageSection's selected-day
+     * logic, this genuinely can't be derived without a side effect).
+     */
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setTime(calculateTimeRemaining(targetDate));
 
     const interval = window.setInterval(() => {

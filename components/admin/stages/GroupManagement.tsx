@@ -63,6 +63,11 @@ export default function GroupManagement({
   }
 
   useEffect(() => {
+    // Standard fetch-on-mount pattern: loadGroups() sets `loading` to
+    // true as its first line before awaiting the server call, which is
+    // intentional (shows a loading state immediately), not a derived-
+    // state sync the lint rule is meant to catch.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadGroups();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stageId]);
@@ -193,7 +198,7 @@ export default function GroupManagement({
         ) : groups.length === 0 ? (
           <p className="text-sm text-slate-500">
             No groups yet - add your first
-            one below (e.g. "Group A").
+            one below (e.g. &quot;Group A&quot;).
           </p>
         ) : (
           groups.map((group) => (

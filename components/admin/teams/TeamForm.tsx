@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import {
@@ -104,38 +104,48 @@ export default function TeamForm({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    if (!team) {
-      return;
-    }
+  /*
+   * Resync all fields when the `team` prop changes identity (e.g. after
+   * a router.refresh() following a save) - adjusted directly during
+   * render rather than via an effect, so there's no extra render
+   * showing stale field values first. Same trigger condition as the
+   * effect this replaces (`team` reference equality), just computed
+   * during render instead of after commit.
+   */
+  const [prevTeam, setPrevTeam] = useState(team);
 
-    setName(team.name ?? "");
-    setSlug(team.slug ?? "");
-    setAbbreviation(
-      team.abbreviation ?? "",
-    );
-    setDescription(
-      team.description ?? "",
-    );
-    setPosterMediaId(
-      team.posterMediaId ?? "",
-    );
-    setLogoMediaId(
-      team.logoMediaId ?? "",
-    );
-    setGroupName(
-      (team.group?.name as GroupName) ??
-        "Group A",
-    );
-    setPlayers(
-      team.players?.length
-        ? team.players
-        : EMPTY_PLAYERS,
-    );
-    setStatus(
-      team.status ?? "ACTIVE",
-    );
-  }, [team]);
+  if (team !== prevTeam) {
+    setPrevTeam(team);
+
+    if (team) {
+      setName(team.name ?? "");
+      setSlug(team.slug ?? "");
+      setAbbreviation(
+        team.abbreviation ?? "",
+      );
+      setDescription(
+        team.description ?? "",
+      );
+      setPosterMediaId(
+        team.posterMediaId ?? "",
+      );
+      setLogoMediaId(
+        team.logoMediaId ?? "",
+      );
+      setGroupName(
+        (team.group?.name as GroupName) ??
+          "Group A",
+      );
+      setPlayers(
+        team.players?.length
+          ? team.players
+          : EMPTY_PLAYERS,
+      );
+      setStatus(
+        team.status ?? "ACTIVE",
+      );
+    }
+  }
 
   function handleNameChange(
     value: string,
@@ -447,7 +457,7 @@ export default function TeamForm({
     </h2>
 
     <p className="mt-1 text-sm text-slate-400">
-      Select the team's poster and logo from the
+      Select the team&apos;s poster and logo from the
       Media Library.
     </p>
   </div>

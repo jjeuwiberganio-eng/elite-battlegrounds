@@ -17,7 +17,7 @@ export default function PublicNotFound() {
 
         {/* Title */}
         <h2 className="mt-4 text-3xl font-bold text-slate-900 md:text-4xl">
-          This Battlefield Doesn't Exist
+          This Battlefield Doesn&apos;t Exist
         </h2>
 
         {/* Description */}

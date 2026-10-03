@@ -226,8 +226,6 @@ return (
               >
                 {normalizedMatches.map(
                   (match, index) => {
-                    const time = getMatchTime(match);
-
                     return (
                       <option
                         key={match.id}

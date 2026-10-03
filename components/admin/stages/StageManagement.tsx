@@ -4,6 +4,8 @@ import {
   useState,
 } from "react";
 
+import type { TournamentStageType } from "@prisma/client";
+
 import {
   createTournamentStage,
   deleteTournamentStage,
@@ -134,7 +136,13 @@ export default function StageManagement({
       const payload = {
         name: values.name,
         slug: values.slug,
-        type: values.type as any,
+        /*
+         * values.type is a plain string (the form's <select> only ever
+         * offers the stageTypes options the server supplied), so this
+         * is safe - narrower than `as any`, which would have silently
+         * allowed anything through.
+         */
+        type: values.type as TournamentStageType,
         displayOrder:
           values.displayOrder,
         bestOf: values.bestOf,
