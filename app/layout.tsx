@@ -51,7 +51,26 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
+  /*
+   * iOS Safari has a well-known quirk: maximumScale <= 1 (or
+   * userScalable: false) doesn't just block the browser's own native
+   * pinch-zoom - it also stops iOS from reliably delivering the second
+   * touch point to the page's JS at all, which breaks any custom
+   * pinch-to-zoom implementation on the page (like the mobile playoff
+   * bracket's MobileBracketScaler), even though it works fine on
+   * Android. Allowing scale here, combined with that component's own
+   * `touch-action: none`, lets iOS route two-finger input to it
+   * correctly while still preventing a lone pinch from zooming that
+   * specific element's surroundings.
+   *
+   * Trade-off: the rest of the site becomes pinch-zoomable on iOS too,
+   * since touch-action: none is only set on the bracket itself, not
+   * globally. That's the accepted cost of fixing the bracket - and
+   * it's also generally better for accessibility (users who need to
+   * zoom text) than fighting it site-wide.
+   */
+  maximumScale: 5,
+  userScalable: true,
   themeColor: "#FAFAF8",
 };
 
