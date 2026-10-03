@@ -23,64 +23,32 @@ export default function HeroSection({
   return (
     <section className="relative isolate overflow-hidden bg-white lg:min-h-[680px]">
       {/*
-        Desktop artwork - genuinely full-bleed this time: a direct child of
-        the SECTION (not the padded 1280px content container below), so its
-        width is a percentage of the real browser viewport, not of the
-        content column. w-[150%] anchored to the section's own right-0 means
-        the image always reaches the true right edge of the browser, at any
-        width, with 50% extra width bleeding off-screen to the left (clipped
-        by overflow-hidden) - that overflow is what keeps the tournament
-        emblem (which sits in the source image's left portion) permanently
-        cropped out of view, leaving just the abstract light-streak artwork
-        visible behind the text. Verified with real Chromium screenshots
-        from 1024px up to 3440px ultrawide.
+        Right-side artwork. Same width and crop as before (440px from
+        1024-1279px, 560px from 1280px up, object-left so the emblem shows),
+        but now anchored to the SECTION itself (the true edge of the browser
+        window) instead of the 1280px content container - so on wide
+        screens it reaches the real right edge instead of stopping short
+        and leaving a gap.
+
+        top-[110px] keeps it clear of the floating navbar (nav is ~110px
+        tall) so the emblem never pokes up behind the nav links - simpler
+        and more robust than trying to mask/fade that area, and avoids the
+        drift problem from anchoring it to the raw viewport for its
+        left-right position (it isn't - only its right edge is
+        viewport-relative; its width is a fixed, already-calibrated value).
       */}
-      <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-[150%] overflow-hidden lg:block">
+      <div className="pointer-events-none absolute right-0 top-[110px] bottom-0 hidden w-[440px] overflow-hidden lg:block xl:w-[560px]">
         <Image
           src={hero.backgroundImage}
           alt=""
           fill
           priority
-          sizes="150vw"
-          className="object-cover object-[right_center]"
+          sizes="560px"
+          className="object-cover object-left"
         />
+
+        <div className="pointer-events-none absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-white to-transparent" />
       </div>
-
-      {/*
-        Left cover - solid white, matching the page background, for
-        everything to the left of where the centered 1280px content
-        container begins. Sized from the same 1280px constant the container
-        itself uses, so it only ever appears once the viewport is wider than
-        the container (exactly when the full-bleed image above would
-        otherwise show raw, unmasked artwork in that dead zone).
-      */}
-      <div
-        className="pointer-events-none absolute inset-y-0 left-0 hidden bg-white lg:block"
-        style={{ width: "max(0px, calc((100% - 1280px) / 2))" }}
-      />
-
-      {/*
-        Readability gradient - anchored INSIDE the same 1280px container the
-        text uses (not a raw percentage of the viewport), so it always
-        tracks the text column no matter how wide the browser window is.
-        This is the lesson from the previous full-bleed attempt: the mask
-        and the text must share one coordinate system, or they drift apart
-        at different widths.
-      */}
-      <div className="pointer-events-none absolute inset-y-0 left-0 hidden w-full max-w-[1280px] lg:mx-auto lg:block">
-        <div className="absolute inset-y-0 left-0 w-[64%] bg-gradient-to-r from-white from-0% via-white via-[58%] to-transparent" />
-      </div>
-
-      {/*
-        Top fade - full section width (not confined to the 1280px content
-        container), covering roughly the Navbar's own height (h-40 matches
-        the lg:pt-40 used below). The floating Navbar uses a WIDER max-w-1500
-        container than this content column's max-w-1280, so without this the
-        artwork could still show unmasked directly behind the nav's
-        rightmost links on some window widths. This keeps that whole band
-        consistently light regardless of horizontal position.
-      */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 hidden h-40 bg-gradient-to-b from-white from-0% via-white/60 via-[55%] to-transparent lg:block" />
 
       <div
         className="
