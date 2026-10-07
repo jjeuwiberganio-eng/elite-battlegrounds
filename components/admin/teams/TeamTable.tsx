@@ -1,11 +1,16 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Edit,
   Shield,
+  Trash2,
   Users,
 } from "lucide-react";
+
+import { deleteTeam } from "@/actions/teams";
 
 interface TeamPlayer {
   id: string;
@@ -73,6 +78,39 @@ function registrationLabel(
 export default function TeamTable({
   teams,
 }: Readonly<TeamTableProps>) {
+  const router = useRouter();
+
+  const [deletingId, setDeletingId] =
+    useState<string | null>(null);
+
+  async function handleDelete(
+    teamId: string,
+    teamName: string,
+  ) {
+    const confirmed = window.confirm(
+      `Delete ${teamName}? This removes them from the active roster - you can restore them later if needed.`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setDeletingId(teamId);
+
+    try {
+      await deleteTeam(teamId);
+      router.refresh();
+    } catch (err) {
+      window.alert(
+        err instanceof Error
+          ? err.message
+          : "Failed to delete team.",
+      );
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
   if (teams.length === 0) {
     return (
       <div className="rounded-3xl border border-dashed border-slate-700 bg-slate-950 p-12 text-center">
@@ -193,14 +231,36 @@ export default function TeamTable({
                 </td>
 
                 <td className="px-6 py-5 text-right">
-                  <Link
-                    href={`/admin/teams/${team.id}`}
-                    className="inline-flex items-center gap-2 rounded-xl border border-slate-700 px-4 py-2 text-sm font-bold text-slate-300 transition hover:border-amber-500/50 hover:text-amber-400"
-                  >
-                    <Edit className="h-4 w-4" />
+                  <div className="inline-flex items-center gap-2">
+                    <Link
+                      href={`/admin/teams/${team.id}`}
+                      className="inline-flex items-center gap-2 rounded-xl border border-slate-700 px-4 py-2 text-sm font-bold text-slate-300 transition hover:border-amber-500/50 hover:text-amber-400"
+                    >
+                      <Edit className="h-4 w-4" />
 
-                    Edit
-                  </Link>
+                      Edit
+                    </Link>
+
+                    <button
+                      type="button"
+                      disabled={
+                        deletingId === team.id
+                      }
+                      onClick={() =>
+                        handleDelete(
+                          team.id,
+                          team.name,
+                        )
+                      }
+                      className="inline-flex items-center gap-2 rounded-xl border border-red-500/30 px-4 py-2 text-sm font-bold text-red-400 transition hover:border-red-500/60 hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <Trash2 className="h-4 w-4" />
+
+                      {deletingId === team.id
+                        ? "Deleting..."
+                        : "Delete"}
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -279,14 +339,36 @@ export default function TeamTable({
               </div>
             </div>
 
-            <Link
-              href={`/admin/teams/${team.id}`}
-              className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-700 px-4 py-3 text-sm font-bold text-slate-300 transition hover:border-amber-500/50 hover:text-amber-400"
-            >
-              <Edit className="h-4 w-4" />
+            <div className="mt-4 flex gap-3">
+              <Link
+                href={`/admin/teams/${team.id}`}
+                className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-slate-700 px-4 py-3 text-sm font-bold text-slate-300 transition hover:border-amber-500/50 hover:text-amber-400"
+              >
+                <Edit className="h-4 w-4" />
 
-              Edit Team
-            </Link>
+                Edit
+              </Link>
+
+              <button
+                type="button"
+                disabled={
+                  deletingId === team.id
+                }
+                onClick={() =>
+                  handleDelete(
+                    team.id,
+                    team.name,
+                  )
+                }
+                className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-red-500/30 px-4 py-3 text-sm font-bold text-red-400 transition hover:border-red-500/60 hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <Trash2 className="h-4 w-4" />
+
+                {deletingId === team.id
+                  ? "Deleting..."
+                  : "Delete"}
+              </button>
+            </div>
           </div>
         ))}
       </div>
