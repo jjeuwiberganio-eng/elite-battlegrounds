@@ -648,6 +648,18 @@ export async function createTeam(
               "WAITLISTED",
             ],
           },
+
+          /*
+           * Belt-and-suspenders on top of deleteTeam() now cancelling
+           * the registration: also check the team itself directly, so
+           * this count is correct even for teams that were deleted
+           * before that fix existed (their registration status was
+           * never retroactively updated - this makes the count right
+           * regardless of registration status).
+           */
+          team: {
+            deletedAt: null,
+          },
         },
       },
     );
