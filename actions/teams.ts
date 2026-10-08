@@ -1168,6 +1168,32 @@ export async function deleteTeam(
     },
   });
 
+  /*
+   * Also cancel the team's tournament registration - without this,
+   * the registration row stays "APPROVED" forever, which still counts
+   * toward the tournament's max-teams cap (blocking new signups even
+   * though this team is no longer visible anywhere) and can still
+   * show up in standings/qualifiers queries that filter by
+   * registration status rather than team.deletedAt.
+   */
+  await prisma.tournamentRegistration.updateMany({
+    where: {
+      teamId,
+      status: {
+        in: [
+          "SUBMITTED",
+          "UNDER_REVIEW",
+          "APPROVED",
+          "WAITLISTED",
+        ],
+      },
+    },
+
+    data: {
+      status: "CANCELLED",
+    },
+  });
+
   revalidatePath(
     "/admin/teams",
   );
@@ -1181,6 +1207,8 @@ export async function deleteTeam(
   );
 
   revalidatePath("/");
+  revalidatePath("/standings");
+  revalidatePath("/schedule");
 
   return {
     success: true,
@@ -1219,6 +1247,26 @@ export async function restoreTeam(
     },
   });
 
+  /*
+   * Mirror of the cancellation in deleteTeam() - restores the
+   * registration deleteTeam cancelled, back to APPROVED. A team that
+   * was deletable from the admin roster was already an approved,
+   * active team, so APPROVED is the correct state to return to (there
+   * is no stored record of which of SUBMITTED/UNDER_REVIEW/WAITLISTED
+   * it might have been before, but those are early-registration
+   * states a live roster team wouldn't realistically still be in).
+   */
+  await prisma.tournamentRegistration.updateMany({
+    where: {
+      teamId,
+      status: "CANCELLED",
+    },
+
+    data: {
+      status: "APPROVED",
+    },
+  });
+
   revalidatePath(
     "/admin/teams",
   );
@@ -1226,6 +1274,10 @@ export async function restoreTeam(
   revalidatePath(
     "/admin/matches",
   );
+
+  revalidatePath("/");
+  revalidatePath("/standings");
+  revalidatePath("/schedule");
 
   return {
     success: true,

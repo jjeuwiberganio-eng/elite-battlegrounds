@@ -115,6 +115,23 @@ export async function getGroupStageSchedule() {
 
       include: {
         matches: {
+          /*
+           * Exclude matches where either side's team was
+           * soft-deleted - same reasoning as
+           * getUpcomingPlayoffMatches above.
+           */
+          where: {
+            participants: {
+              every: {
+                tournamentRegistration: {
+                  team: {
+                    deletedAt: null,
+                  },
+                },
+              },
+            },
+          },
+
           orderBy: [
             {
               scheduledAt: "asc",
@@ -550,6 +567,22 @@ export async function getUpcomingPlayoffMatches() {
             "COMPLETED",
             "CANCELLED",
           ],
+        },
+
+        /*
+         * Exclude matches where either side's team was soft-deleted
+         * (deleteTeam sets deletedAt, doesn't actually remove the row)
+         * - otherwise a removed team's Grand Final slot would still
+         * show up here even though it's gone everywhere else.
+         */
+        participants: {
+          every: {
+            tournamentRegistration: {
+              team: {
+                deletedAt: null,
+              },
+            },
+          },
         },
       },
 

@@ -152,6 +152,18 @@ export async function getStandings(): Promise<StandingsData> {
     await prisma.standing.findMany({
       where: {
         tournamentStageId: groupStage.id,
+
+        /*
+         * Exclude standings whose team was deleted (soft-deleted via
+         * deleteTeam - deletedAt set, not a hard delete). Without this,
+         * a removed team's row keeps showing up here even though
+         * admins can no longer see or manage that team anywhere else.
+         */
+        tournamentRegistration: {
+          team: {
+            deletedAt: null,
+          },
+        },
       },
       orderBy: [
         { points: "desc" },
@@ -273,6 +285,14 @@ export async function getPlayoffQualifiers(): Promise<
       {
         where: {
           tournamentId: tournament.id,
+
+          // Same reasoning as getStandings() above - a soft-deleted
+          // team's qualification slot shouldn't still show publicly.
+          tournamentRegistration: {
+            team: {
+              deletedAt: null,
+            },
+          },
         },
         orderBy: {
           seed: "asc",
