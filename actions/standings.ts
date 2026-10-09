@@ -743,6 +743,17 @@ export async function recalculateStandings(): Promise<{
           points: wins * 3,
         },
         update: {
+          /*
+           * Refresh the group too, not just the stats - a team's
+           * Standing row is created once and then only ever updated
+           * from here on. Without this, moving a team to a different
+           * group (via Edit Team) updates its registration correctly
+           * but leaves this already-existing row pinned to whatever
+           * group it was in the first time standings were calculated,
+           * so the team keeps showing under its old group forever.
+           */
+          tournamentGroupId:
+            registration.tournamentGroupId,
           played:
             completedParticipations.length,
           wins,
