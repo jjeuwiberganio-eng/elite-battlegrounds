@@ -633,6 +633,35 @@ export async function createTeam(
     );
   }
 
+  /*
+   * name/slug are DB-level unique columns with no exception for
+   * soft-deleted rows, so a previously-deleted team still occupies
+   * its old name/slug even though the check above (which only looks
+   * at active teams) doesn't see it as a conflict. Without this,
+   * re-creating a team you'd deleted earlier fails with a raw
+   * database unique-constraint error instead of a clear message - or
+   * worse, silently can't be created at all. If one exists, revive it
+   * in place (below) instead of attempting a fresh insert that would
+   * collide with it.
+   */
+  const reviveCandidate =
+    await prisma.team.findFirst({
+      where: {
+        deletedAt: {
+          not: null,
+        },
+
+        OR: [
+          {
+            name,
+          },
+          {
+            slug,
+          },
+        ],
+      },
+    });
+
   const existingRegistrationCount =
     await prisma.tournamentRegistration.count(
       {
@@ -682,84 +711,228 @@ export async function createTeam(
   const result =
     await prisma.$transaction(
       async (tx) => {
-        const team =
-          await tx.team.create({
-            data: {
-              name,
-              slug,
+        const team = reviveCandidate
+          ? await tx.team.update({
+              where: {
+                id: reviveCandidate.id,
+              },
 
-              abbreviation:
-                abbreviation || null,
-
-              description:
-                description || null,
-
-              logoMediaId,
-
-              posterMediaId,
-
-              createdById:
-                user.id,
-
-              status: "ACTIVE",
-            },
-          });
-
-        await tx.player.createMany({
-          data: data.players.map(
-            (player) => ({
-              teamId: team.id,
-
-              inGameName:
-                cleanString(
-                  player.inGameName,
-                ),
-
-              role: player.role,
-
-              isCaptain:
-                Boolean(
-                  player.isCaptain,
-                ),
-
-              isSubstitute:
-                Boolean(
-                  player.isSubstitute,
-                ),
-            }),
-          ),
-        });
-
-        const registration =
-          await tx.tournamentRegistration.create(
-            {
               data: {
-                tournamentId:
-                  tournament.id,
+                name,
+                slug,
 
-                teamId:
-                  team.id,
+                abbreviation:
+                  abbreviation || null,
 
-                tournamentGroupId:
-                  group.id,
+                description:
+                  description || null,
 
-                status:
-                  "APPROVED",
+                logoMediaId,
 
-                reviewedById:
+                posterMediaId,
+
+                createdById:
                   user.id,
 
-                submittedAt:
-                  new Date(),
+                status: "ACTIVE",
+                deletedAt: null,
+              },
+            })
+          : await tx.team.create({
+              data: {
+                name,
+                slug,
 
-                reviewedAt:
-                  new Date(),
+                abbreviation:
+                  abbreviation || null,
 
-                remarks:
-                  "Created and approved by Super Admin.",
+                description:
+                  description || null,
+
+                logoMediaId,
+
+                posterMediaId,
+
+                createdById:
+                  user.id,
+
+                status: "ACTIVE",
+              },
+            });
+
+        /*
+         * Reviving an old team can leave its previous roster still
+         * sitting there (deleteTeam() only soft-deletes the Team row
+         * itself, not its players) - diff against whatever's
+         * currently there instead of a blind createMany, same
+         * approach updateTeam() uses, so this doesn't collide with
+         * the (teamId, inGameName) unique constraint.
+         */
+        const existingPlayers =
+          reviveCandidate
+            ? await tx.player.findMany({
+                where: {
+                  teamId: team.id,
+                  deletedAt: null,
+                },
+              })
+            : [];
+
+        const incomingPlayers =
+          data.players.map((player) => ({
+            ...player,
+            inGameName: cleanString(
+              player.inGameName,
+            ),
+          }));
+
+        const incomingNames = new Set(
+          incomingPlayers.map(
+            (player) =>
+              player.inGameName,
+          ),
+        );
+
+        const removedPlayerIds =
+          existingPlayers
+            .filter(
+              (existing) =>
+                !incomingNames.has(
+                  existing.inGameName,
+                ),
+            )
+            .map(
+              (existing) => existing.id,
+            );
+
+        if (removedPlayerIds.length > 0) {
+          await tx.player.updateMany({
+            where: {
+              id: {
+                in: removedPlayerIds,
               },
             },
-          );
+            data: {
+              deletedAt: new Date(),
+            },
+          });
+        }
+
+        for (const player of incomingPlayers) {
+          const existing =
+            existingPlayers.find(
+              (candidate) =>
+                candidate.inGameName ===
+                player.inGameName,
+            );
+
+          if (existing) {
+            await tx.player.update({
+              where: {
+                id: existing.id,
+              },
+              data: {
+                role: player.role,
+                isCaptain: Boolean(
+                  player.isCaptain,
+                ),
+                isSubstitute: Boolean(
+                  player.isSubstitute,
+                ),
+                deletedAt: null,
+              },
+            });
+          } else {
+            await tx.player.create({
+              data: {
+                teamId: team.id,
+                inGameName:
+                  player.inGameName,
+                role: player.role,
+                isCaptain: Boolean(
+                  player.isCaptain,
+                ),
+                isSubstitute: Boolean(
+                  player.isSubstitute,
+                ),
+              },
+            });
+          }
+        }
+
+        /*
+         * A revived team can also already have a (cancelled)
+         * registration row from before it was deleted - update that
+         * one instead of creating a second, which would collide with
+         * the (tournamentId, teamId) unique constraint.
+         */
+        const existingRegistration =
+          reviveCandidate
+            ? await tx.tournamentRegistration.findUnique(
+                {
+                  where: {
+                    tournamentId_teamId: {
+                      tournamentId:
+                        tournament.id,
+                      teamId: team.id,
+                    },
+                  },
+                },
+              )
+            : null;
+
+        const registration =
+          existingRegistration
+            ? await tx.tournamentRegistration.update(
+                {
+                  where: {
+                    id: existingRegistration.id,
+                  },
+
+                  data: {
+                    tournamentGroupId:
+                      group.id,
+
+                    status:
+                      "APPROVED",
+
+                    reviewedById:
+                      user.id,
+
+                    reviewedAt:
+                      new Date(),
+                  },
+                },
+              )
+            : await tx.tournamentRegistration.create(
+                {
+                  data: {
+                    tournamentId:
+                      tournament.id,
+
+                    teamId:
+                      team.id,
+
+                    tournamentGroupId:
+                      group.id,
+
+                    status:
+                      "APPROVED",
+
+                    reviewedById:
+                      user.id,
+
+                    submittedAt:
+                      new Date(),
+
+                    reviewedAt:
+                      new Date(),
+
+                    remarks:
+                      "Created and approved by Super Admin.",
+                  },
+                },
+              );
 
         return {
           team,
