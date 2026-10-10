@@ -46,11 +46,9 @@ export default function GroupStageSection({
 
   /*
    * Derived, not synced via an effect: if the requested day no longer
-   * exists in the current data (e.g. an admin deleted it, or this is
-   * the first render), fall back to the first available day - this
-   * recomputes automatically in the same render whenever `days` or
-   * `requestedDayId` changes, instead of rendering stale state for one
-   * pass and then correcting it a tick later via setState-in-effect.
+   * exists in the current data, fall back to the first available day
+   * - recomputes automatically in the same render whenever `days` or
+   * `requestedDayId` changes.
    */
   const selectedDay =
     days.find(
@@ -151,28 +149,62 @@ export default function GroupStageSection({
 
               /* =========================
                  MATCHES FOR SELECTED DAY
+                 Grouped by exact start time, so matches scheduled
+                 simultaneously (e.g. 4 matches all at 7:00 PM) share
+                 ONE row instead of stacking as separate rows. Within
+                 a row, every match is a uniform-size card - team name
+                 length no longer shifts the VS position, since each
+                 card uses a fixed [1fr_auto_1fr] grid with truncation
+                 instead of content-sized flex.
               ========================== */
               <div className="divide-y">
 
-                {selectedDay.matches.map(
-                  (match) => (
+                {Object.entries(
+                  selectedDay.matches.reduce(
+                    (
+                      groups: Record<
+                        string,
+                        typeof selectedDay.matches
+                      >,
+                      match,
+                    ) => {
+                      const key =
+                        match.startTime ??
+                        "TBD";
+
+                      groups[key] = [
+                        ...(groups[key] ??
+                          []),
+                        match,
+                      ];
+
+                      return groups;
+                    },
+                    {},
+                  ),
+                ).map(
+                  ([
+                    startTime,
+                    matchesAtTime,
+                  ]) => (
                     <div
-                      key={match.id}
-                      className="grid items-center gap-8 px-8 py-8 lg:grid-cols-[180px_1fr_auto]"
+                      key={startTime}
+                      className="flex flex-col gap-6 px-8 py-8 lg:flex-row lg:items-start"
                     >
 
-                      {/* Time */}
-                      <div>
-                        <div className="flex items-center gap-2 text-slate-500">
+                      {/* Time - shown once per row, not per match */}
+                      <div className="flex shrink-0 items-center gap-2 text-slate-500 lg:w-[160px] lg:flex-col lg:items-start lg:gap-1">
+                        <div className="flex items-center gap-2">
                           <Clock3 className="h-4 w-4" />
 
                           Match Time
                         </div>
 
-                        <p className="mt-2 text-2xl font-black">
-                          {match.startTime
+                        <p className="text-2xl font-black text-slate-900">
+                          {startTime !==
+                          "TBD"
                             ? new Date(
-                                match.startTime,
+                                startTime,
                               ).toLocaleTimeString(
                                 [],
                                 {
@@ -185,77 +217,106 @@ export default function GroupStageSection({
                         </p>
                       </div>
 
-                      {/* Teams */}
-                      <div className="flex items-center justify-center gap-10">
+                      {/* Matches at this time - uniform-size cards */}
+                      <div className="grid flex-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
 
-                        {/* Team A */}
-                        <div className="text-center">
+                        {matchesAtTime.map(
+                          (match) => (
+                            <div
+                              key={
+                                match.id
+                              }
+                              className="rounded-2xl border border-slate-200 bg-slate-50 p-5"
+                            >
 
-                          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-slate-100">
-                            {match.teamA.logo ? (
-                              <img
-                                src={
-                                  match.teamA
-                                    .logo
-                                }
-                                alt={
-                                  match.teamA
-                                    .name
-                                }
-                                className="h-14 w-14 object-contain"
-                              />
-                            ) : null}
-                          </div>
+                              <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
 
-                          <p className="mt-3 font-bold">
-                            {
-                              match.teamA
-                                .name
-                            }
-                          </p>
+                                {/* Team A */}
+                                <div className="flex flex-col items-center text-center">
 
-                        </div>
+                                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white ring-1 ring-slate-200">
+                                    {match
+                                      .teamA
+                                      .logo ? (
+                                      <img
+                                        src={
+                                          match
+                                            .teamA
+                                            .logo
+                                        }
+                                        alt={
+                                          match
+                                            .teamA
+                                            .name
+                                        }
+                                        className="h-11 w-11 object-contain"
+                                      />
+                                    ) : null}
+                                  </div>
 
-                        {/* VS */}
-                        <span className="text-3xl font-black text-amber-500">
-                          VS
-                        </span>
+                                  <p className="mt-2 w-full truncate text-sm font-bold">
+                                    {
+                                      match
+                                        .teamA
+                                        .name
+                                    }
+                                  </p>
 
-                        {/* Team B */}
-                        <div className="text-center">
+                                </div>
 
-                          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-slate-100">
-                            {match.teamB.logo ? (
-                              <img
-                                src={
-                                  match.teamB
-                                    .logo
-                                }
-                                alt={
-                                  match.teamB
-                                    .name
-                                }
-                                className="h-14 w-14 object-contain"
-                              />
-                            ) : null}
-                          </div>
+                                {/* VS */}
+                                <span className="px-1 text-lg font-black text-amber-500">
+                                  VS
+                                </span>
 
-                          <p className="mt-3 font-bold">
-                            {
-                              match.teamB
-                                .name
-                            }
-                          </p>
+                                {/* Team B */}
+                                <div className="flex flex-col items-center text-center">
 
-                        </div>
+                                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white ring-1 ring-slate-200">
+                                    {match
+                                      .teamB
+                                      .logo ? (
+                                      <img
+                                        src={
+                                          match
+                                            .teamB
+                                            .logo
+                                        }
+                                        alt={
+                                          match
+                                            .teamB
+                                            .name
+                                        }
+                                        className="h-11 w-11 object-contain"
+                                      />
+                                    ) : null}
+                                  </div>
 
-                      </div>
+                                  <p className="mt-2 w-full truncate text-sm font-bold">
+                                    {
+                                      match
+                                        .teamB
+                                        .name
+                                    }
+                                  </p>
 
-                      {/* Best Of */}
-                      <div>
-                        <span className="rounded-full border border-amber-500 px-5 py-2 text-sm font-bold uppercase text-amber-600">
-                          {match.bestOf}
-                        </span>
+                                </div>
+
+                              </div>
+
+                              {/* Best Of */}
+                              <div className="mt-4 flex justify-center">
+                                <span className="rounded-full border border-amber-500 px-4 py-1 text-xs font-bold uppercase text-amber-600">
+                                  {
+                                    match.bestOf
+                                  }
+                                </span>
+                              </div>
+
+                            </div>
+                          ),
+                        )}
+
                       </div>
 
                     </div>

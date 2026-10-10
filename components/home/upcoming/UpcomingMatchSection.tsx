@@ -116,6 +116,23 @@ export default function UpcomingMatchSection({
       });
   }, [matches]);
 
+  /*
+   * normalizedMatches stays sorted by time, so the match auto-selected
+   * by default is genuinely the soonest one. For the list/dropdown
+   * itself though, sort by match number instead - otherwise matches
+   * from different stages/groups (whose numbering isn't chronological
+   * relative to each other) show up in a seemingly arbitrary order
+   * like "Match 4, Match 1, Match 2, Match 3" rather than reading
+   * top-to-bottom in sequence.
+   */
+  const matchesByNumber = useMemo(() => {
+    return [...normalizedMatches].sort(
+      (a, b) =>
+        (a.matchNumber ?? 0) -
+        (b.matchNumber ?? 0),
+    );
+  }, [normalizedMatches]);
+
   const [selectedMatchId, setSelectedMatchId] =
     useState<string>(
       normalizedMatches[0]?.id ?? "",
@@ -224,7 +241,7 @@ return (
                   focus:ring-amber-500/20
                 "
               >
-                {normalizedMatches.map(
+                {matchesByNumber.map(
                   (match, index) => {
                     return (
                       <option
@@ -261,7 +278,7 @@ return (
 
             {/* Match list */}
             <div className="mt-6 hidden space-y-2 lg:block">
-              {normalizedMatches.map(
+              {matchesByNumber.map(
                 (match, index) => {
                   const active =
                     match.id === selectedMatch.id;
