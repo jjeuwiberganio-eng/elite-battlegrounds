@@ -213,6 +213,8 @@ export async function getGroupStageSchedule() {
                   match.streamUrl ??
                   undefined,
 
+                status: match.status,
+
                 teamA: {
                   id:
                     teamA
@@ -231,6 +233,8 @@ export async function getGroupStageSchedule() {
                       .team.logo
                       ?.url ??
                     null,
+
+                  score: teamA?.score ?? 0,
                 },
 
                 teamB: {
@@ -251,6 +255,8 @@ export async function getGroupStageSchedule() {
                       .team.logo
                       ?.url ??
                     null,
+
+                  score: teamB?.score ?? 0,
                 },
               };
             },

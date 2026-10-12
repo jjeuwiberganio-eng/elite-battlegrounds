@@ -22,17 +22,20 @@ interface ScheduleContentProps {
         startTime: string;
         bestOf: string;
         streamUrl?: string;
+        status: string;
 
         teamA: {
           id: string;
           name: string;
           logo: string | null;
+          score: number;
         };
 
         teamB: {
           id: string;
           name: string;
           logo: string | null;
+          score: number;
         };
       }[];
     }[];
