@@ -63,9 +63,17 @@ function groupByStartTime(matches: Match[]) {
 function formatTime(startTime: string) {
   if (startTime === TBD) return TBD;
 
-  return new Date(startTime).toLocaleTimeString([], {
+  /*
+   * Pinned to Philippine time. Without an explicit timeZone the server
+   * (Vercel, UTC) and the browser format the same instant differently:
+   * the page first showed the server's UTC time and only switched to
+   * the visitor's time after a re-render. A fixed zone gives the same
+   * text everywhere, so there is nothing to mismatch or flash.
+   */
+  return new Date(startTime).toLocaleTimeString("en-US", {
     hour: "numeric",
     minute: "2-digit",
+    timeZone: "Asia/Manila",
   });
 }
 
@@ -353,13 +361,10 @@ export default function GroupStageSection({
                       <div>
                         <p className="flex items-center gap-1.5 text-xs font-semibold text-slate-500">
                           <Clock3 className="h-3.5 w-3.5" />
-                          Match Time
+                          Match Time (PHT)
                         </p>
 
-                        <p
-                          suppressHydrationWarning
-                          className="mt-1 text-2xl font-black text-slate-900"
-                        >
+                        <p className="mt-1 text-2xl font-black text-slate-900">
                           {formatTime(startTime)}
                         </p>
                       </div>

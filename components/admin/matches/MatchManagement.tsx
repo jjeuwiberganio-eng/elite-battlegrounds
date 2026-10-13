@@ -834,18 +834,16 @@ export default function MatchManagement({
                             Scheduled
                           </p>
 
-                          <p
-                            suppressHydrationWarning
-                            className="mt-1 text-slate-300"
-                          >
+                          <p className="mt-1 text-slate-300">
                             {scheduledTime
-                              ? scheduledTime.toLocaleString(
+                              ? `${scheduledTime.toLocaleString(
                                   "en-PH",
                                   {
                                     dateStyle: "medium",
                                     timeStyle: "short",
+                                    timeZone: "Asia/Manila",
                                   },
-                                )
+                                )} PHT`
                               : "Not scheduled"}
                           </p>
                         </div>
