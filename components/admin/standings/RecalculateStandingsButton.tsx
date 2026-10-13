@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { RefreshCw } from "lucide-react";
 
 import { recalculateStandings } from "@/actions/standings";
@@ -20,18 +21,17 @@ export default function RecalculateStandingsButton() {
         await recalculateStandings();
 
       if (!result.success) {
-        alert(result.message);
+        toast.error(result.message);
         return;
       }
 
+      toast.success("Standings recalculated.");
       router.refresh();
     } catch (error) {
       console.error(error);
 
-      alert(
-        error instanceof Error
-          ? error.message
-          : "Failed to recalculate standings.",
+      toast.error(
+        "Failed to recalculate standings. Please try again.",
       );
     } finally {
       setLoading(false);

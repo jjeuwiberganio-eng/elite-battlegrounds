@@ -155,6 +155,12 @@ export async function uploadMedia(file: File) {
     },
   });
 
+  /*
+   * Without this the standalone Media Library page can keep showing its
+   * cached list and a fresh upload would not appear until a hard refresh.
+   */
+  revalidatePath("/admin/media");
+
   return {
     id: media.id,
     url: media.url,

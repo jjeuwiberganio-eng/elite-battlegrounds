@@ -10,6 +10,7 @@ import {
   deleteGroup,
   type AdminGroup,
 } from "@/actions/tournament-groups";
+import { useConfirm } from "@/components/admin/shared/ConfirmProvider";
 
 interface GroupManagementProps {
   stageId: string;
@@ -20,6 +21,8 @@ export default function GroupManagement({
   stageId,
   stageName,
 }: Readonly<GroupManagementProps>) {
+  const confirm = useConfirm();
+
   const [groups, setGroups] = useState<
     AdminGroup[]
   >([]);
@@ -145,9 +148,12 @@ export default function GroupManagement({
   async function handleDelete(
     group: AdminGroup,
   ) {
-    const confirmed = window.confirm(
-      `Delete "${group.name}"? This can't be undone.`,
-    );
+    const confirmed = await confirm({
+      title: `Delete "${group.name}"?`,
+      description:
+        "Teams assigned to this group will need a new one. This can't be undone.",
+      confirmLabel: "Delete group",
+    });
 
     if (!confirmed) {
       return;

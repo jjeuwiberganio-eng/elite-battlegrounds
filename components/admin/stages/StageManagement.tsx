@@ -16,6 +16,7 @@ import StageForm, {
   type StageFormValues,
 } from "./StageForm";
 import GroupManagement from "./GroupManagement";
+import { useConfirm } from "@/components/admin/shared/ConfirmProvider";
 
 interface StageItem {
   id: string;
@@ -43,6 +44,8 @@ export default function StageManagement({
   initialStages,
   stageTypes,
 }: Readonly<StageManagementProps>) {
+  const confirm = useConfirm();
+
   const [stages, setStages] =
     useState(initialStages);
 
@@ -234,10 +237,11 @@ export default function StageManagement({
   ) {
     clearMessages();
 
-    const confirmed =
-      window.confirm(
-        `Delete "${stage.name}"?`,
-      );
+    const confirmed = await confirm({
+      title: `Delete "${stage.name}"?`,
+      description: "This removes the stage. This can't be undone.",
+      confirmLabel: "Delete stage",
+    });
 
     if (!confirmed) {
       return;

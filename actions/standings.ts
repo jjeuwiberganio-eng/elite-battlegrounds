@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { requireRole } from "@/src/auth/permissions";
+import { USER_ROLES } from "@/src/lib/constants";
 
 /*
 |--------------------------------------------------------------------------
@@ -633,6 +635,12 @@ export async function recalculateStandings(): Promise<{
   success: boolean;
   message: string;
 }> {
+  /*
+   * Server actions are public endpoints - without this, anyone could
+   * trigger a recalculation.
+   */
+  await requireRole(USER_ROLES.SUPER_ADMIN);
+
   const tournament = await getCurrentTournament();
 
   if (!tournament) {

@@ -9,6 +9,8 @@ import {
   deleteScheduleDay,
   type AdminScheduleDay,
 } from "@/actions/schedule-days";
+import { useConfirm } from "@/components/admin/shared/ConfirmProvider";
+import { toast } from "sonner";
 
 interface ScheduleDayCardProps {
   day: AdminScheduleDay;
@@ -17,6 +19,8 @@ interface ScheduleDayCardProps {
 export default function ScheduleDayCard({
   day,
 }: Readonly<ScheduleDayCardProps>) {
+  const confirm = useConfirm();
+
   const router = useRouter();
 
   const [editing, setEditing] =
@@ -62,9 +66,12 @@ export default function ScheduleDayCard({
   }
 
   async function handleDelete() {
-    const confirmed = window.confirm(
-      `Delete "${day.name}"?`,
-    );
+    const confirmed = await confirm({
+      title: `Delete "${day.name}"?`,
+      description:
+        "Matches on this day are kept but no longer assigned to a day, so they won't show on the public schedule until you reassign them.",
+      confirmLabel: "Delete day",
+    });
 
     if (!confirmed) {
       return;
@@ -77,7 +84,7 @@ export default function ScheduleDayCard({
 
       router.refresh();
     } catch (err) {
-      alert(
+      toast.error(
         err instanceof Error
           ? err.message
           : "Failed to delete.",

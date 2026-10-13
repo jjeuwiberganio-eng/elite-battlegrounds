@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 
 import { updateMatch } from "@/actions/matches";
 
@@ -12,20 +13,39 @@ interface ScheduleDayOption {
   dayNumber: number;
 }
 
+interface TeamOption {
+  id: string;
+  name: string;
+}
+
 interface EditableMatch {
   id: string;
   matchNumber: number;
   bestOf: string;
+  status: string;
   scheduledAt: Date | string | null;
   streamUrl: string | null;
   scheduleDay?: {
     id: string;
   } | null;
+  participants: {
+    side: string;
+    tournamentRegistration: {
+      team: {
+        id: string;
+      };
+    };
+  }[];
 }
 
 interface MatchEditFormProps {
   match: EditableMatch;
   scheduleDays: ScheduleDayOption[];
+
+  /*
+   * Approved teams the opponents can be swapped to.
+   */
+  teams: TeamOption[];
 
   /*
    * Only Group Stage matches carry a schedule day.
@@ -70,10 +90,30 @@ const inputClassName =
 export default function MatchEditForm({
   match,
   scheduleDays,
+  teams,
   showScheduleDay,
   onSaved,
   onCancel,
 }: Readonly<MatchEditFormProps>) {
+  const initialTeamAId =
+    match.participants.find(
+      (participant) => participant.side === "TEAM_A",
+    )?.tournamentRegistration.team.id ?? "";
+
+  const initialTeamBId =
+    match.participants.find(
+      (participant) => participant.side === "TEAM_B",
+    )?.tournamentRegistration.team.id ?? "";
+
+  /*
+   * A finished match keeps its teams until its result is reset,
+   * otherwise the recorded score would belong to the wrong team.
+   */
+  const teamsLocked = match.status === "COMPLETED";
+
+  const [teamAId, setTeamAId] = useState(initialTeamAId);
+  const [teamBId, setTeamBId] = useState(initialTeamBId);
+
   const [scheduledAt, setScheduledAt] = useState(
     toDateTimeLocalValue(match.scheduledAt),
   );
@@ -107,6 +147,16 @@ export default function MatchEditForm({
       return;
     }
 
+    if (!teamAId || !teamBId) {
+      setError("Both teams are required.");
+      return;
+    }
+
+    if (teamAId === teamBId) {
+      setError("Teams must be different.");
+      return;
+    }
+
     if (showScheduleDay && !scheduleDayId) {
       setError(
         "Schedule day is required for Group Stage matches.",
@@ -129,21 +179,33 @@ export default function MatchEditForm({
 
     setSaving(true);
 
+    const teamsChanged =
+      teamAId !== initialTeamAId || teamBId !== initialTeamBId;
+
     try {
-      await updateMatch(match.id, {
+      const result = await updateMatch(match.id, {
         scheduledAt: localDate.toISOString(),
         bestOf,
         streamUrl: streamUrl.trim() || null,
         ...(showScheduleDay ? { scheduleDayId } : {}),
+        ...(teamsChanged ? { teamAId, teamBId } : {}),
       });
 
+      if (!result.ok) {
+        setError(result.error);
+        toast.error(result.error);
+        setSaving(false);
+        return;
+      }
+
+      toast.success(`Match #${match.matchNumber} updated.`);
       onSaved();
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to update match.",
-      );
+    } catch {
+      const message =
+        "Failed to update the match. Please try again.";
+
+      setError(message);
+      toast.error(message);
       setSaving(false);
     }
   }
@@ -159,8 +221,7 @@ export default function MatchEditForm({
         </p>
 
         <p className="mt-2 text-sm text-slate-400">
-          Update the schedule, format, and livestream. To change
-          the teams, delete and recreate the match.
+          Update the teams, schedule, format, and livestream.
         </p>
       </div>
 
@@ -169,6 +230,61 @@ export default function MatchEditForm({
           {error}
         </div>
       )}
+
+      <div className="grid gap-6 md:grid-cols-2">
+        <div>
+          <label className="mb-2 block font-semibold text-white">
+            Team A
+          </label>
+
+          <select
+            value={teamAId}
+            onChange={(event) =>
+              setTeamAId(event.target.value)
+            }
+            disabled={saving || teamsLocked}
+            className={inputClassName}
+          >
+            <option value="">Select Team A</option>
+
+            {teams.map((team) => (
+              <option key={team.id} value={team.id}>
+                {team.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="mb-2 block font-semibold text-white">
+            Team B
+          </label>
+
+          <select
+            value={teamBId}
+            onChange={(event) =>
+              setTeamBId(event.target.value)
+            }
+            disabled={saving || teamsLocked}
+            className={inputClassName}
+          >
+            <option value="">Select Team B</option>
+
+            {teams.map((team) => (
+              <option key={team.id} value={team.id}>
+                {team.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {teamsLocked && (
+          <p className="text-sm text-amber-400 md:col-span-2">
+            This match has a recorded result. Reset the result
+            first if you need to change the teams.
+          </p>
+        )}
+      </div>
 
       <div className="grid gap-6 md:grid-cols-2">
         <div>

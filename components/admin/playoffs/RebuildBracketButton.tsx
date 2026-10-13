@@ -5,20 +5,23 @@ import { useRouter } from "next/navigation";
 import { RefreshCw } from "lucide-react";
 
 import { rebuildCurrentPlayoffBracketStructure } from "@/actions/playoffs";
+import { useConfirm } from "@/components/admin/shared/ConfirmProvider";
+import { toast } from "sonner";
 
 export default function RebuildBracketButton() {
+  const confirm = useConfirm();
+
   const router = useRouter();
 
   const [loading, setLoading] = useState(false);
 
   async function handleRebuild() {
-    const confirmed = window.confirm(
-      "Rebuild the current playoff bracket structure?\n\n" +
-        "This will delete the existing empty bracket slots and " +
-        "replace them with the full 22-slot structure.\n\n" +
-        "This is only safe while no teams, scores, or results " +
-        "have been assigned.",
-    );
+    const confirmed = await confirm({
+      title: "Rebuild the playoff bracket?",
+      description:
+        "This deletes the existing empty bracket slots and replaces them with the full 22-slot structure. It is only safe while no teams, scores or results have been assigned.",
+      confirmLabel: "Rebuild bracket",
+    });
 
     if (!confirmed) {
       return;
@@ -31,7 +34,7 @@ export default function RebuildBracketButton() {
 
       router.refresh();
     } catch (error) {
-      window.alert(
+      toast.error(
         error instanceof Error
           ? error.message
           : "Failed to rebuild the playoff bracket.",

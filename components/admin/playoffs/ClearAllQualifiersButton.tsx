@@ -5,17 +5,24 @@ import { useRouter } from "next/navigation";
 import { Eraser } from "lucide-react";
 
 import { clearAllPlayoffQualifications } from "@/actions/playoff-qualifiers-bulk";
+import { useConfirm } from "@/components/admin/shared/ConfirmProvider";
+import { toast } from "sonner";
 
 export default function ClearAllQualifiersButton() {
+  const confirm = useConfirm();
+
   const router = useRouter();
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleClear() {
-    const confirmed = window.confirm(
-      "Remove ALL playoff qualifier assignments? This clears every team's seed - you'll need to reassign them once the group stage actually finishes. This can't be undone.",
-    );
+    const confirmed = await confirm({
+      title: "Remove all playoff qualifiers?",
+      description:
+        "This clears every team's seed. You'll need to reassign them once the group stage finishes. This can't be undone.",
+      confirmLabel: "Clear qualifiers",
+    });
 
     if (!confirmed) {
       return;
@@ -27,7 +34,7 @@ export default function ClearAllQualifiersButton() {
 
       const result = await clearAllPlayoffQualifications();
 
-      alert(result.message);
+      toast.success(result.message);
       router.refresh();
     } catch (err) {
       setError(

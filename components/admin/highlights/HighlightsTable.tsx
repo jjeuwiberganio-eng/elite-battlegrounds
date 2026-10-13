@@ -16,6 +16,8 @@ import {
   deleteHighlight,
   moveHighlight,
 } from "@/actions/highlights";
+import { useConfirm } from "@/components/admin/shared/ConfirmProvider";
+import { toast } from "sonner";
 
 interface HighlightsTableProps {
   highlights: AdminHighlight[];
@@ -24,6 +26,8 @@ interface HighlightsTableProps {
 export default function HighlightsTable({
   highlights,
 }: Readonly<HighlightsTableProps>) {
+  const confirm = useConfirm();
+
   const router = useRouter();
   const searchParams = useSearchParams();
   const activeType =
@@ -58,7 +62,7 @@ export default function HighlightsTable({
 
       router.refresh();
     } catch (error) {
-      alert(
+      toast.error(
         error instanceof Error
           ? error.message
           : "Failed to update.",
@@ -82,7 +86,7 @@ export default function HighlightsTable({
 
       router.refresh();
     } catch (error) {
-      alert(
+      toast.error(
         error instanceof Error
           ? error.message
           : "Failed to reorder.",
@@ -95,9 +99,11 @@ export default function HighlightsTable({
   async function handleDelete(
     highlight: AdminHighlight,
   ) {
-    const confirmed = window.confirm(
-      `Delete "${highlight.title}"?`,
-    );
+    const confirmed = await confirm({
+      title: `Delete "${highlight.title}"?`,
+      description: "It will be removed from the homepage highlights.",
+      confirmLabel: "Delete highlight",
+    });
 
     if (!confirmed) {
       return;
@@ -110,7 +116,7 @@ export default function HighlightsTable({
 
       router.refresh();
     } catch (error) {
-      alert(
+      toast.error(
         error instanceof Error
           ? error.message
           : "Failed to delete.",

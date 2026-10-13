@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { createNextScheduleDay } from "@/actions/schedule-days";
 
 export default function AddScheduleDayButton() {
@@ -16,11 +17,12 @@ export default function AddScheduleDayButton() {
 
       await createNextScheduleDay();
 
+      toast.success("Schedule day added.");
       router.refresh();
     } catch (error) {
       console.error(error);
 
-      alert(
+      toast.error(
         error instanceof Error
           ? error.message
           : "Failed to add schedule day.",

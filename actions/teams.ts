@@ -2,11 +2,27 @@
 
 import { revalidatePath } from "next/cache";
 import { PlayerRole } from "@prisma/client";
+import { recalculateStandings } from "@/actions/standings";
+import { actionError, type ActionResult } from "@/lib/action-result";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/src/auth/permissions";
 import { USER_ROLES } from "@/src/lib/constants";
 
 const SUPER_ADMIN = USER_ROLES.SUPER_ADMIN;
+
+/*
+ * Standings store a snapshot of each team's group, and hide archived
+ * teams, so anything that moves, archives or restores a team refreshes
+ * them immediately instead of relying on a manual "Recalculate". A
+ * standings failure must never fail the team change itself.
+ */
+async function refreshStandings() {
+  try {
+    await recalculateStandings();
+  } catch (error) {
+    console.error("Standings recalculation failed:", error);
+  }
+}
 
 const MAX_PLAYERS = 6;
 
@@ -409,6 +425,51 @@ export async function getTeams() {
   });
 }
 
+
+/**
+ * Archived (soft-deleted) teams, newest deletion first, for the
+ * "Archived teams" view where they can be restored.
+ */
+export async function getArchivedTeams() {
+  await requireRole(SUPER_ADMIN);
+
+  const teams = await prisma.team.findMany({
+    where: {
+      deletedAt: {
+        not: null,
+      },
+    },
+
+    orderBy: {
+      deletedAt: "desc",
+    },
+
+    include: {
+      logo: true,
+
+      players: {
+        where: {
+          deletedAt: null,
+        },
+
+        select: {
+          id: true,
+        },
+      },
+    },
+  });
+
+  return teams.map((team) => ({
+    id: team.id,
+    name: team.name,
+    abbreviation: team.abbreviation,
+    logo: team.logo?.url ?? null,
+    playerCount: team.players.length,
+    deletedAt: team.deletedAt
+      ? team.deletedAt.toISOString()
+      : null,
+  }));
+}
 
 /**
  * Get one team by ID for the Super Admin
@@ -1304,6 +1365,8 @@ export async function updateTeam(
 
   revalidatePath("/");
 
+  await refreshStandings();
+
   return {
     success: true,
   };
@@ -1318,153 +1381,176 @@ export async function updateTeam(
  */
 export async function deleteTeam(
   teamId: string,
-) {
-  await requireRole(SUPER_ADMIN);
+): Promise<ActionResult> {
+  try {
+    await requireRole(SUPER_ADMIN);
 
-  if (!teamId) {
-    throw new Error(
-      "Team ID is required.",
-    );
-  }
+    if (!teamId) {
+      throw new Error("Team ID is required.");
+    }
 
-  const team =
-    await prisma.team.findFirst({
+    const team = await prisma.team.findFirst({
       where: {
         id: teamId,
         deletedAt: null,
       },
     });
 
-  if (!team) {
-    throw new Error(
-      "Team not found.",
-    );
-  }
+    if (!team) {
+      throw new Error("Team not found.");
+    }
 
-  await prisma.team.update({
-    where: {
-      id: teamId,
-    },
-
-    data: {
-      status: "INACTIVE",
-      deletedAt:
-        new Date(),
-    },
-  });
-
-  /*
-   * Also cancel the team's tournament registration - without this,
-   * the registration row stays "APPROVED" forever, which still counts
-   * toward the tournament's max-teams cap (blocking new signups even
-   * though this team is no longer visible anywhere) and can still
-   * show up in standings/qualifiers queries that filter by
-   * registration status rather than team.deletedAt.
-   */
-  await prisma.tournamentRegistration.updateMany({
-    where: {
-      teamId,
-      status: {
-        in: [
-          "SUBMITTED",
-          "UNDER_REVIEW",
-          "APPROVED",
-          "WAITLISTED",
-        ],
+    await prisma.team.update({
+      where: {
+        id: teamId,
       },
-    },
 
-    data: {
-      status: "CANCELLED",
-    },
-  });
+      data: {
+        status: "INACTIVE",
+        deletedAt: new Date(),
+      },
+    });
 
-  revalidatePath(
-    "/admin/teams",
-  );
+    /*
+     * Also cancel the team's tournament registration - without this,
+     * the registration row stays "APPROVED" forever, which still counts
+     * toward the tournament's max-teams cap (blocking new signups even
+     * though this team is no longer visible anywhere) and can still
+     * show up in standings/qualifiers queries that filter by
+     * registration status rather than team.deletedAt.
+     */
+    await prisma.tournamentRegistration.updateMany({
+      where: {
+        teamId,
+        status: {
+          in: [
+            "SUBMITTED",
+            "UNDER_REVIEW",
+            "APPROVED",
+            "WAITLISTED",
+          ],
+        },
+      },
 
-  revalidatePath(
-    "/admin/matches",
-  );
+      data: {
+        status: "CANCELLED",
+      },
+    });
 
-  revalidatePath(
-    "/admin",
-  );
+    await refreshStandings();
 
-  revalidatePath("/");
-  revalidatePath("/standings");
-  revalidatePath("/schedule");
+    revalidatePath("/admin/teams");
+    revalidatePath("/admin/matches");
+    revalidatePath("/admin");
+    revalidatePath("/");
+    revalidatePath("/standings");
+    revalidatePath("/schedule");
 
-  return {
-    success: true,
-  };
+    return { ok: true };
+  } catch (error) {
+    return actionError(error, "Failed to delete the team.");
+  }
 }
 
 /**
  * Restore an archived team.
+ *
+ * Refused when the tournament is already at its maximum number of
+ * teams, because restoring would put it over the cap.
  */
 export async function restoreTeam(
   teamId: string,
-) {
-  await requireRole(SUPER_ADMIN);
+): Promise<ActionResult> {
+  try {
+    await requireRole(SUPER_ADMIN);
 
-  const team =
-    await prisma.team.findUnique({
+    if (!teamId) {
+      throw new Error("Team ID is required.");
+    }
+
+    const team = await prisma.team.findUnique({
       where: {
         id: teamId,
       },
     });
 
-  if (!team) {
-    throw new Error(
-      "Team not found.",
-    );
+    if (!team) {
+      throw new Error("Team not found.");
+    }
+
+    if (!team.deletedAt) {
+      throw new Error("This team is already active.");
+    }
+
+    const tournament = await getCurrentTournament();
+
+    if (tournament) {
+      const activeCount =
+        await prisma.tournamentRegistration.count({
+          where: {
+            tournamentId: tournament.id,
+
+            status: {
+              in: [
+                "SUBMITTED",
+                "UNDER_REVIEW",
+                "APPROVED",
+                "WAITLISTED",
+              ],
+            },
+
+            team: {
+              deletedAt: null,
+            },
+          },
+        });
+
+      if (activeCount >= tournament.maxTeams) {
+        throw new Error(
+          "The tournament has reached its maximum number of teams, so this team can't be restored right now.",
+        );
+      }
+    }
+
+    await prisma.team.update({
+      where: {
+        id: teamId,
+      },
+
+      data: {
+        status: "ACTIVE",
+        deletedAt: null,
+      },
+    });
+
+    /*
+     * Mirror of the cancellation in deleteTeam() - restores the
+     * registration deleteTeam cancelled, back to APPROVED. A team that
+     * was deletable from the admin roster was already an approved,
+     * active team, so APPROVED is the correct state to return to.
+     */
+    await prisma.tournamentRegistration.updateMany({
+      where: {
+        teamId,
+        status: "CANCELLED",
+      },
+
+      data: {
+        status: "APPROVED",
+      },
+    });
+
+    await refreshStandings();
+
+    revalidatePath("/admin/teams");
+    revalidatePath("/admin/matches");
+    revalidatePath("/admin");
+    revalidatePath("/");
+    revalidatePath("/standings");
+    revalidatePath("/schedule");
+
+    return { ok: true };
+  } catch (error) {
+    return actionError(error, "Failed to restore the team.");
   }
-
-  await prisma.team.update({
-    where: {
-      id: teamId,
-    },
-
-    data: {
-      status: "ACTIVE",
-      deletedAt: null,
-    },
-  });
-
-  /*
-   * Mirror of the cancellation in deleteTeam() - restores the
-   * registration deleteTeam cancelled, back to APPROVED. A team that
-   * was deletable from the admin roster was already an approved,
-   * active team, so APPROVED is the correct state to return to (there
-   * is no stored record of which of SUBMITTED/UNDER_REVIEW/WAITLISTED
-   * it might have been before, but those are early-registration
-   * states a live roster team wouldn't realistically still be in).
-   */
-  await prisma.tournamentRegistration.updateMany({
-    where: {
-      teamId,
-      status: "CANCELLED",
-    },
-
-    data: {
-      status: "APPROVED",
-    },
-  });
-
-  revalidatePath(
-    "/admin/teams",
-  );
-
-  revalidatePath(
-    "/admin/matches",
-  );
-
-  revalidatePath("/");
-  revalidatePath("/standings");
-  revalidatePath("/schedule");
-
-  return {
-    success: true,
-  };
 }

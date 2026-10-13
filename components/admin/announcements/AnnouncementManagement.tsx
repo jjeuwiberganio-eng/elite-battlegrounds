@@ -10,6 +10,8 @@ import {
   deleteAnnouncement,
   type AdminAnnouncement,
 } from "@/actions/announcements";
+import { useConfirm } from "@/components/admin/shared/ConfirmProvider";
+import { toast } from "sonner";
 
 interface AnnouncementManagementProps {
   announcements: AdminAnnouncement[];
@@ -29,6 +31,8 @@ const STATUS_STYLES: Record<
 export default function AnnouncementManagement({
   announcements,
 }: Readonly<AnnouncementManagementProps>) {
+  const confirm = useConfirm();
+
   const router = useRouter();
 
   const [title, setTitle] = useState("");
@@ -86,7 +90,7 @@ export default function AnnouncementManagement({
 
       router.refresh();
     } catch (err) {
-      alert(
+      toast.error(
         err instanceof Error
           ? err.message
           : "Failed to update.",
@@ -99,9 +103,12 @@ export default function AnnouncementManagement({
   async function handleDelete(
     announcement: AdminAnnouncement,
   ) {
-    const confirmed = window.confirm(
-      "Delete this announcement?",
-    );
+    const confirmed = await confirm({
+      title: "Delete this announcement?",
+      description:
+        "It will no longer appear in the site announcement bar.",
+      confirmLabel: "Delete announcement",
+    });
 
     if (!confirmed) {
       return;
@@ -116,7 +123,7 @@ export default function AnnouncementManagement({
 
       router.refresh();
     } catch (err) {
-      alert(
+      toast.error(
         err instanceof Error
           ? err.message
           : "Failed to delete.",

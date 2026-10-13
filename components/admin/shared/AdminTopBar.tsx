@@ -23,6 +23,21 @@ const SECTION_LABELS: Record<string, string> = {
   "media": "Media Library",
   "audit-logs": "Activity",
   "settings": "Website Settings",
+  "rules": "Rules",
+};
+
+/*
+ * The public page that shows what the current admin section edits, so
+ * "View Site" opens the page you just changed instead of the homepage.
+ */
+const PUBLIC_PAGE_FOR_SECTION: Record<string, string> = {
+  teams: "/standings",
+  standings: "/standings",
+  schedule: "/schedule",
+  matches: "/schedule",
+  playoffs: "/schedule",
+  highlights: "/highlights",
+  rules: "/rules",
 };
 
 export default function AdminTopBar() {
@@ -50,6 +65,9 @@ export default function AdminTopBar() {
             letter.toUpperCase(),
           )
       : "Dashboard");
+
+  const siteHref =
+    PUBLIC_PAGE_FOR_SECTION[segments[0] ?? ""] ?? "/";
 
   return (
     <div className="sticky top-0 z-40 border-b border-white/10 bg-slate-950/95 backdrop-blur">
@@ -82,7 +100,7 @@ export default function AdminTopBar() {
           )}
 
           <a
-            href="/"
+            href={siteHref}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1.5 rounded-lg border border-white/10 px-3 py-1.5 text-xs font-bold text-slate-300 transition hover:bg-white/5 hover:text-white"

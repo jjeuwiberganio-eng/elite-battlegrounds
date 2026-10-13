@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 
 import AdminNavRow from "@/components/admin/dashboard/AdminNavRow";
+import AttentionPanel from "@/components/admin/dashboard/AttentionPanel";
 
 export const metadata: Metadata = {
   title: "Dashboard",
@@ -176,6 +177,8 @@ const navGroups: NavGroup[] = [
   },
 ];
 
+export const dynamic = "force-dynamic";
+
 export default function AdminDashboardPage() {
   return (
     <main className="mx-auto max-w-4xl space-y-6 p-6 lg:p-10">
@@ -198,6 +201,8 @@ export default function AdminDashboardPage() {
           aren&apos;t wired up yet.
         </p>
       </div>
+
+      <AttentionPanel />
 
       <div className="space-y-3">
         {navGroups.map((group) => {

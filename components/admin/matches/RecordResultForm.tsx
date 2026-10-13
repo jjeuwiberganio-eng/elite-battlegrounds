@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Trophy, RotateCcw } from "lucide-react";
 
 import {
   recordMatchResult,
   resetMatchResult,
 } from "@/actions/matches";
+import { useConfirm } from "@/components/admin/shared/ConfirmProvider";
 
 interface RecordResultFormProps {
   matchId: string;
@@ -29,6 +31,7 @@ export default function RecordResultForm({
   winnerSide,
 }: Readonly<RecordResultFormProps>) {
   const router = useRouter();
+  const confirm = useConfirm();
 
   const [expanded, setExpanded] =
     useState(false);
@@ -76,29 +79,39 @@ export default function RecordResultForm({
     try {
       setLoading(true);
 
-      await recordMatchResult({
+      const result = await recordMatchResult({
         matchId,
         scoreA: parsedA,
         scoreB: parsedB,
       });
 
+      if (!result.ok) {
+        setError(result.error);
+        toast.error(result.error);
+        return;
+      }
+
+      toast.success(result.message);
       setExpanded(false);
       router.refresh();
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to record result.",
-      );
+    } catch {
+      const message =
+        "Failed to record the result. Please try again.";
+
+      setError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
   }
 
   async function handleReset() {
-    const confirmed = window.confirm(
-      "Reset this match's result? Scores will be cleared and the match returns to Ready status.",
-    );
+    const confirmed = await confirm({
+      title: "Reset this result?",
+      description:
+        "The scores are cleared and the match goes back to Ready. Standings are recalculated automatically.",
+      confirmLabel: "Reset result",
+    });
 
     if (!confirmed) {
       return;
@@ -108,15 +121,22 @@ export default function RecordResultForm({
       setLoading(true);
       setError(null);
 
-      await resetMatchResult(matchId);
+      const result = await resetMatchResult(matchId);
 
+      if (!result.ok) {
+        setError(result.error);
+        toast.error(result.error);
+        return;
+      }
+
+      toast.success(result.message);
       router.refresh();
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to reset result.",
-      );
+    } catch {
+      const message =
+        "Failed to reset the result. Please try again.";
+
+      setError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }

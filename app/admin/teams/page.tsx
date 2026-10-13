@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import {
+  getArchivedTeams,
   getTeams,
   getTournamentControl,
 } from "@/actions/teams";
@@ -19,9 +20,11 @@ export default async function TeamsPage() {
   const [
     teams,
     tournament,
+    archivedTeams,
   ] = await Promise.all([
     getTeams(),
     getTournamentControl(),
+    getArchivedTeams(),
   ]);
 
   /*
@@ -134,6 +137,7 @@ export default async function TeamsPage() {
         <TeamsManagement
           initialTeams={teams}
           groups={groups}
+          archivedTeams={archivedTeams}
         />
       )}
     </main>

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import {
   Edit,
   Shield,
@@ -11,6 +12,7 @@ import {
 } from "lucide-react";
 
 import { deleteTeam } from "@/actions/teams";
+import { useConfirm } from "@/components/admin/shared/ConfirmProvider";
 
 interface TeamPlayer {
   id: string;
@@ -79,6 +81,7 @@ export default function TeamTable({
   teams,
 }: Readonly<TeamTableProps>) {
   const router = useRouter();
+  const confirm = useConfirm();
 
   const [deletingId, setDeletingId] =
     useState<string | null>(null);
@@ -87,9 +90,12 @@ export default function TeamTable({
     teamId: string,
     teamName: string,
   ) {
-    const confirmed = window.confirm(
-      `Delete ${teamName}? This removes them from the active roster - you can restore them later if needed.`,
-    );
+    const confirmed = await confirm({
+      title: `Delete ${teamName}?`,
+      description:
+        "The team is archived and its registration cancelled, so it disappears from standings, qualifiers and the schedule. You can bring it back later from Archived teams.",
+      confirmLabel: "Delete team",
+    });
 
     if (!confirmed) {
       return;
@@ -98,14 +104,17 @@ export default function TeamTable({
     setDeletingId(teamId);
 
     try {
-      await deleteTeam(teamId);
+      const result = await deleteTeam(teamId);
+
+      if (!result.ok) {
+        toast.error(result.error);
+        return;
+      }
+
+      toast.success(`${teamName} was archived.`);
       router.refresh();
-    } catch (err) {
-      window.alert(
-        err instanceof Error
-          ? err.message
-          : "Failed to delete team.",
-      );
+    } catch {
+      toast.error("Failed to delete the team. Please try again.");
     } finally {
       setDeletingId(null);
     }

@@ -3,6 +3,8 @@ import type { ReactNode } from "react";
 
 import AuthSessionProvider from "@/components/admin/shared/AuthSessionProvider";
 import AdminTopBar from "@/components/admin/shared/AdminTopBar";
+import AdminToaster from "@/components/admin/shared/AdminToaster";
+import { ConfirmProvider } from "@/components/admin/shared/ConfirmProvider";
 
 export const metadata: Metadata = {
   title: {
@@ -22,10 +24,14 @@ export default function AdminLayout({
 }: AdminLayoutProps) {
   return (
     <AuthSessionProvider>
-      <div className="min-h-screen bg-slate-950">
-        <AdminTopBar />
-        {children}
-      </div>
+      <ConfirmProvider>
+        <div className="min-h-screen bg-slate-950">
+          <AdminTopBar />
+          {children}
+        </div>
+
+        <AdminToaster />
+      </ConfirmProvider>
     </AuthSessionProvider>
   );
 }

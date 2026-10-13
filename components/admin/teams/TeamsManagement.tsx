@@ -4,6 +4,9 @@ import { useMemo, useState } from "react";
 import { Plus } from "lucide-react";
 import Link from "next/link";
 
+import ArchivedTeamsPanel, {
+  type ArchivedTeam,
+} from "@/components/admin/teams/ArchivedTeamsPanel";
 import TeamTable from "@/components/admin/teams/TeamTable";
 
 interface TeamPlayer {
@@ -37,11 +40,13 @@ interface TeamData {
 interface TeamsManagementProps {
   initialTeams: TeamData[];
   groups: string[];
+  archivedTeams?: ArchivedTeam[];
 }
 
 export default function TeamsManagement({
   initialTeams,
   groups,
+  archivedTeams = [],
 }: Readonly<TeamsManagementProps>) {
   const [search, setSearch] = useState("");
   const [groupFilter, setGroupFilter] =
@@ -214,6 +219,8 @@ export default function TeamsManagement({
       <TeamTable
         teams={filteredTeams}
       />
+
+      <ArchivedTeamsPanel teams={archivedTeams} />
     </section>
   );
 }
