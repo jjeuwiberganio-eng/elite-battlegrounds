@@ -690,10 +690,18 @@ export async function getTournamentStatistics(): Promise<TournamentStatistics> {
     matchesPlayed,
     gamesPlayed,
   ] = await Promise.all([
+    /*
+     * Don't count archived teams: a team deleted before deleteTeam()
+     * started cancelling its registration still has an APPROVED
+     * registration row, which used to inflate this number (28 vs 24).
+     */
     prisma.tournamentRegistration.count({
       where: {
         tournamentId: tournament.id,
         status: "APPROVED",
+        team: {
+          deletedAt: null,
+        },
       },
     }),
 
@@ -923,6 +931,9 @@ export async function getStandingsStatistics(): Promise<StandingsStatistics> {
         status: "APPROVED",
         tournamentGroupId: {
           not: null,
+        },
+        team: {
+          deletedAt: null,
         },
       },
     }),
