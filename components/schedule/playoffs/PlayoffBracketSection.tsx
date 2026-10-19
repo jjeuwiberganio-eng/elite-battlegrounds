@@ -48,65 +48,89 @@ type Side = "upper" | "lower";
 // headers are derived from these, so if the card size changes, update
 // it here and every connector/header follows automatically.
 const MATCH_WIDTH = 225;
-const MATCH_HEIGHT = 101;
+
+// The card is given this exact height (see MatchCard), so every
+// connector can aim at the true vertical middle (top + MATCH_HEIGHT / 2)
+// instead of an estimate that drifts with font rendering.
+const MATCH_HEIGHT = 100;
 
 interface Position {
   left: number;
   top: number;
 }
 
+/*
+ * Card layout. Columns are 120px apart (cards are 100px tall, so there is
+ * a 20px gap between neighbours), and every card is placed on the middle
+ * of the cards that feed it, so each connector is a clean bracket line:
+ *
+ *   - Pair  (two cards -> one): the target sits exactly midway.
+ *   - Match (one card -> one):  source and target share a row, so the
+ *     line is perfectly straight.
+ *
+ * If you move a card, move the cards it feeds - the connectors are
+ * derived from these tables and follow automatically.
+ */
 const UPPER_POSITIONS: Record<
   number,
   Position[]
 > = {
+  // Round 1 -> Quarterfinals is one-to-one: each Round 1 winner plays one
+  // of the four top seeds, so a Quarterfinal sits on its Round 1's row.
   1: [
     { left: 30, top: 80 },
-    { left: 30, top: 180 },
-    { left: 30, top: 280 },
-    { left: 30, top: 380 },
+    { left: 30, top: 200 },
+    { left: 30, top: 320 },
+    { left: 30, top: 440 },
   ],
 
   2: [
-    { left: 330, top: 120 },
-    { left: 330, top: 220 },
+    { left: 330, top: 80 },
+    { left: 330, top: 200 },
     { left: 330, top: 320 },
-    { left: 330, top: 420 },
+    { left: 330, top: 440 },
   ],
 
+  // Semifinals sit midway between the two Quarterfinals that feed them.
   3: [
-    { left: 650, top: 175 },
-    { left: 650, top: 340 },
+    { left: 650, top: 140 },
+    { left: 650, top: 380 },
   ],
 
+  // Upper Final sits midway between the two Semifinals.
   4: [
-    { left: 910, top: 255 },
+    { left: 910, top: 260 },
   ],
 };
 
 const LOWER_POSITIONS: Record<number, Position[]> = {
   1: [
     { left: 20, top: 90 },
-    { left: 20, top: 190 },
-    { left: 20, top: 290 },
-    { left: 20, top: 390 },
+    { left: 20, top: 210 },
+    { left: 20, top: 330 },
+    { left: 20, top: 450 },
   ],
 
+  // Lower Round 2 sits midway between the two Round 1 matches feeding it.
   2: [
-    { left: 285, top: 145 },
-    { left: 285, top: 345 },
+    { left: 285, top: 150 },
+    { left: 285, top: 390 },
   ],
 
+  // Lower Round 3 is one-to-one with Round 2 (same rows, straight lines).
   3: [
-    { left: 550, top: 195 },
-    { left: 550, top: 395 },
+    { left: 550, top: 150 },
+    { left: 550, top: 390 },
   ],
 
+  // Lower Round 4 sits midway between the two Round 3 matches.
   4: [
-    { left: 815, top: 295 },
+    { left: 815, top: 270 },
   ],
 
+  // Lower Final is one-to-one with Round 4.
   5: [
-    { left: 1080, top: 295 },
+    { left: 1080, top: 270 },
   ],
 };
 
@@ -299,7 +323,7 @@ function TeamRow({
 }) {
   return (
     <div
-      className={`flex h-[38px] items-center justify-between border-t border-white/10 px-3 ${
+      className={`flex h-[38px] shrink-0 items-center justify-between border-t border-white/10 px-3 ${
         winner
           ? "bg-amber-400/10"
           : "bg-white/[0.02]"
@@ -362,38 +386,28 @@ function FinalsConnector({
   lowerY: number;
   width: number;
 }) {
-  const midX = width / 2;
-  const midY = (upperY + lowerY) / 2;
+  const midX = Math.round(width / 2);
+  const midY = Math.round((upperY + lowerY) / 2);
 
   return (
     <>
-      <div
-        className="pointer-events-none absolute h-px bg-amber-400/75"
-        style={{ left: 0, top: upperY, width: midX }}
+      <HorizontalConnector left={0} top={upperY} width={midX} />
+
+      <HorizontalConnector left={0} top={lowerY} width={midX} />
+
+      <VerticalConnector
+        left={midX}
+        top={Math.min(upperY, lowerY)}
+        height={Math.abs(lowerY - upperY)}
       />
 
-      <div
-        className="pointer-events-none absolute h-px bg-amber-400/75"
-        style={{ left: 0, top: lowerY, width: midX }}
+      {/* The single arrow into the Grand Final panel. */}
+      <HorizontalConnector
+        left={midX}
+        top={midY}
+        width={width - midX}
+        arrow
       />
-
-      <div
-        className="pointer-events-none absolute w-px bg-amber-400/75"
-        style={{
-          left: midX,
-          top: Math.min(upperY, lowerY),
-          height: Math.abs(lowerY - upperY),
-        }}
-      />
-
-      <div
-        className="pointer-events-none absolute h-px bg-amber-400/75"
-        style={{ left: midX, top: midY, width: width - midX }}
-      >
-        <span className="absolute -right-1 -top-[6px] text-xs font-black text-amber-400">
-          ›
-        </span>
-      </div>
     </>
   );
 }
@@ -425,33 +439,34 @@ function MatchCard({
 
   return (
     <article
-      className="absolute overflow-hidden rounded-[4px] border border-amber-500/55 bg-[#090b10] shadow-[0_0_20px_rgba(245,158,11,0.08)]"
+      className="absolute flex flex-col overflow-hidden rounded-[4px] border border-amber-500/55 bg-[#090b10] shadow-[0_0_20px_rgba(245,158,11,0.08)]"
       style={{
         left,
         top,
         width,
+        height: MATCH_HEIGHT,
       }}
     >
-      <div className="flex items-center justify-between border-b border-amber-500/20 bg-[#111318] px-2 py-1">
-        <span className="truncate text-[9px] font-black uppercase tracking-[0.12em] text-white/45">
+      {/* Fixed 22px header; each team row below is 38px and draws its own
+          top divider, so 22 + 38 + 38 = 98 = MATCH_HEIGHT minus borders. */}
+      <div className="flex h-[22px] shrink-0 items-center justify-between bg-[#111318] px-2">
+        <span className="truncate text-[9px] font-black uppercase leading-none tracking-[0.12em] text-white/45">
           {code}
         </span>
 
         {completed && (
-          <span className="shrink-0 text-[8px] font-black uppercase tracking-wider text-amber-400">
+          <span className="shrink-0 text-[8px] font-black uppercase leading-none tracking-wider text-amber-400">
             DONE
           </span>
         )}
       </div>
 
-      <div className="border-b border-white/10">
-        <TeamRow
-          team={match.teamA}
-          score={match.scoreA}
-          winner={winnerA}
-          completed={completed}
-        />
-      </div>
+      <TeamRow
+        team={match.teamA}
+        score={match.scoreA}
+        winner={winnerA}
+        completed={completed}
+      />
 
       <TeamRow
         team={match.teamB}
@@ -463,27 +478,62 @@ function MatchCard({
   );
 }
 
+const LINE_COLOR = "rgba(251, 191, 36, 0.75)";
+const ARROW_COLOR = "rgb(251, 191, 36)";
+
+/*
+ * Solid triangle whose TIP sits exactly on the right end of the line it
+ * is placed in, vertically centred on that 1px line. Used instead of a
+ * "›" text glyph, whose position depends on the font and was drifting
+ * off the line.
+ */
+function ArrowHead() {
+  return (
+    <span
+      aria-hidden
+      className="pointer-events-none absolute"
+      style={{
+        right: 0,
+        top: -3,
+        width: 0,
+        height: 0,
+        borderTop: "3.5px solid transparent",
+        borderBottom: "3.5px solid transparent",
+        borderLeft: `6px solid ${ARROW_COLOR}`,
+      }}
+    />
+  );
+}
+
+/*
+ * A 1px horizontal line occupying y..y+1. `top` is always a whole pixel
+ * (positions and MATCH_HEIGHT are whole numbers), so the line is crisp
+ * instead of blurred across two pixel rows. `arrow` draws the arrowhead
+ * at the right end - only the LAST segment of a connector should have it.
+ */
 function HorizontalConnector({
   left,
   top,
   width,
+  arrow = false,
 }: {
   left: number;
   top: number;
   width: number;
+  arrow?: boolean;
 }) {
   return (
     <div
-      className="pointer-events-none absolute h-px bg-amber-400/75"
+      className="pointer-events-none absolute"
       style={{
         left,
         top,
         width,
+        height: 1,
+        backgroundColor: LINE_COLOR,
       }}
     >
-      <span className="absolute -right-1 -top-[6px] text-xs font-black text-amber-400">
-        ›
-      </span>
+      {arrow && <ArrowHead />}
     </div>
   );
 }
@@ -499,11 +549,13 @@ function VerticalConnector({
 }) {
   return (
     <div
-      className="pointer-events-none absolute w-px bg-amber-400/75"
+      className="pointer-events-none absolute"
       style={{
         left,
         top,
-        height,
+        width: 1,
+        height: height + 1,
+        backgroundColor: LINE_COLOR,
       }}
     />
   );
@@ -511,9 +563,10 @@ function VerticalConnector({
 
 /**
  * Connects two source match slots (e.g. both winners of a round) into a
- * single target slot. All coordinates are derived from the Position
- * objects — pass the actual entries from UPPER_POSITIONS/LOWER_POSITIONS
- * so the lines always follow the cards, even if those tables change.
+ * single target slot: a line out of each source, a vertical joining
+ * them, and one arrow into the target. All coordinates are derived from
+ * the Position objects - pass the actual entries from
+ * UPPER_POSITIONS/LOWER_POSITIONS so the lines always follow the cards.
  */
 function PairConnector({
   source,
@@ -528,58 +581,50 @@ function PairConnector({
 
   const sourceX = source[0].left + MATCH_WIDTH;
   const targetLeft = target.left;
-  const middleX =
-    sourceX + (targetLeft - sourceX) / 2;
+  const middleX = Math.round(
+    sourceX + (targetLeft - sourceX) / 2,
+  );
+
+  // The vertical always spans every line that meets it, so the target
+  // line can never end up floating beside it.
+  const verticalTop = Math.min(sourceY1, sourceY2, targetY);
+  const verticalBottom = Math.max(sourceY1, sourceY2, targetY);
 
   return (
     <>
-      <div
-        className="pointer-events-none absolute h-px bg-amber-400/75"
-        style={{
-          left: sourceX,
-          top: sourceY1,
-          width: middleX - sourceX,
-        }}
+      <HorizontalConnector
+        left={sourceX}
+        top={sourceY1}
+        width={middleX - sourceX}
       />
 
-      <div
-        className="pointer-events-none absolute h-px bg-amber-400/75"
-        style={{
-          left: sourceX,
-          top: sourceY2,
-          width: middleX - sourceX,
-        }}
+      <HorizontalConnector
+        left={sourceX}
+        top={sourceY2}
+        width={middleX - sourceX}
       />
 
-      <div
-        className="pointer-events-none absolute w-px bg-amber-400/75"
-        style={{
-          left: middleX,
-          top: Math.min(sourceY1, sourceY2),
-          height: Math.abs(sourceY2 - sourceY1),
-        }}
+      <VerticalConnector
+        left={middleX}
+        top={verticalTop}
+        height={verticalBottom - verticalTop}
       />
 
-      <div
-        className="pointer-events-none absolute h-px bg-amber-400/75"
-        style={{
-          left: middleX,
-          top: targetY,
-          width: targetLeft - middleX,
-        }}
-      >
-        <span className="absolute -right-1 -top-[6px] text-xs font-black text-amber-400">
-          ›
-        </span>
-      </div>
+      <HorizontalConnector
+        left={middleX}
+        top={targetY}
+        width={targetLeft - middleX}
+        arrow
+      />
     </>
   );
 }
 
 /**
  * Connects a single source match slot to a single target slot (e.g.
- * Lower Round 2 → Lower Round 3, one-to-one). Handles same-row links
- * (straight horizontal line) and links that jog up/down between rows.
+ * Lower Round 2 -> Lower Round 3, one-to-one). Same row: one straight
+ * line with an arrow. Different rows: out, a vertical jog, then in -
+ * with the arrow only on the final segment.
  */
 function MatchConnector({
   source,
@@ -598,20 +643,22 @@ function MatchConnector({
     return (
       <HorizontalConnector
         left={sourceX}
-        top={sourceY - 0.5}
+        top={sourceY}
         width={targetLeft - sourceX}
+        arrow
       />
     );
   }
 
-  const middleX =
-    sourceX + (targetLeft - sourceX) / 2;
+  const middleX = Math.round(
+    sourceX + (targetLeft - sourceX) / 2,
+  );
 
   return (
     <>
       <HorizontalConnector
         left={sourceX}
-        top={sourceY - 0.5}
+        top={sourceY}
         width={middleX - sourceX}
       />
 
@@ -623,8 +670,9 @@ function MatchConnector({
 
       <HorizontalConnector
         left={middleX}
-        top={targetY - 0.5}
+        top={targetY}
         width={targetLeft - middleX}
+        arrow
       />
     </>
   );
@@ -704,17 +752,15 @@ function UpperBracket({
         }),
       )}
 
-{/* Round 1 → Quarterfinals */}
+{/* Round 1 → Quarterfinals (one-to-one: each Round 1 winner plays a top seed) */}
 
-<PairConnector
-  source={[UPPER_POSITIONS[1][0], UPPER_POSITIONS[1][1]]}
-  target={UPPER_POSITIONS[2][0]}
-/>
-
-<PairConnector
-  source={[UPPER_POSITIONS[1][2], UPPER_POSITIONS[1][3]]}
-  target={UPPER_POSITIONS[2][1]}
-/>
+{[0, 1, 2, 3].map((index) => (
+  <MatchConnector
+    key={`upper-r1-qf-${index}`}
+    source={UPPER_POSITIONS[1][index]}
+    target={UPPER_POSITIONS[2][index]}
+  />
+))}
 
 {/* Quarterfinals → Semifinals */}
 
@@ -739,7 +785,7 @@ function UpperBracket({
 
 <HorizontalConnector
   left={UPPER_POSITIONS[4][0].left + MATCH_WIDTH}
-  top={UPPER_FINAL_Y - 0.5}
+  top={UPPER_FINAL_Y}
   width={
     BRACKET_COLUMN_WIDTH -
     (UPPER_POSITIONS[4][0].left + MATCH_WIDTH)
@@ -864,7 +910,7 @@ function LowerBracket({
 
 <HorizontalConnector
   left={LOWER_POSITIONS[5][0].left + MATCH_WIDTH}
-  top={LOWER_POSITIONS[5][0].top + MATCH_HEIGHT / 2 - 0.5}
+  top={LOWER_POSITIONS[5][0].top + MATCH_HEIGHT / 2}
   width={
     BRACKET_COLUMN_WIDTH -
     (LOWER_POSITIONS[5][0].left + MATCH_WIDTH)
