@@ -2,83 +2,47 @@ import type { Metadata } from "next";
 
 import {
   getTournamentControl,
-  getStandings,
-  getPlayoffQualifiers,
-  getTournamentStatistics,
-  getRecentMatchResults,
-} from "@/actions/standings";
+  getGroupStageSchedule,
+  getPlayoffBracket,
+  getUpcomingPlayoffMatches,
+} from "@/actions/schedule";
 
-import StandingsHeroSection from "@/components/standings/hero/StandingsHeroSection";
-import GroupTabs from "@/components/standings/navigation/GroupTabs";
-import StandingsTable from "@/components/standings/table/StandingsTable";
-import TournamentStatisticsSection from "@/components/standings/statistics/TournamentStatisticsSection";
-import RecentResultsSection from "@/components/standings/results/RecentResultsSection";
-import PlayoffQualifiersSection from "@/components/standings/qualifiers/PlayoffQualifiersSection";
+import ScheduleHeroSection from "@/components/schedule/hero/ScheduleHeroSection";
+import ScheduleContent from "@/components/schedule/ScheduleContent";
 
 export const metadata: Metadata = {
-  title: "Standings",
+  title: "Schedule",
   description:
-    "View the official Elite Battlegrounds Series group standings, tournament statistics, recent results, and playoff qualifiers.",
+    "View the official Elite Battlegrounds Series tournament schedule including Group Stage matches and the Double Elimination Playoff Bracket.",
 };
 
 export const revalidate = 60;
 
-export default async function StandingsPage() {
+export default async function SchedulePage() {
   const [
     tournament,
-    standings,
-    statistics,
-    recentResults,
-    qualifiers,
+    groupStage,
+    playoffBracket,
+    playoffMatches,
   ] = await Promise.all([
     getTournamentControl(),
-    getStandings(),
-    getTournamentStatistics(),
-    getRecentMatchResults(),
-    getPlayoffQualifiers(),
+    getGroupStageSchedule(),
+    getPlayoffBracket(),
+    getUpcomingPlayoffMatches(),
   ]);
 
-  return (
-    <>
-      <StandingsHeroSection
-        tournament={tournament}
-      />
+return (
+ <div>
 
-      <section className="bg-white pb-16 pt-10">
-        <div className="container mx-auto max-w-[1500px] px-6">
-          <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_380px] lg:items-start">
-            <div>
-              <GroupTabs
-                groups={standings.groups}
-                defaultGroup={
-                  standings.defaultGroup
-                }
-              />
+    <ScheduleHeroSection
+      tournament={tournament}
+    />
 
-              <StandingsTable
-                standings={standings}
-              />
-            </div>
-
-            <PlayoffQualifiersSection
-              groups={qualifiers}
-              playoffSize={
-                tournament.playoffSize
-              }
-            />
-          </div>
-
-          <div className="mt-10 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_460px]">
-            <TournamentStatisticsSection
-              statistics={statistics}
-            />
-
-            <RecentResultsSection
-              matches={recentResults}
-            />
-          </div>
-        </div>
-      </section>
-    </>
-  );
+    <ScheduleContent
+      groupStage={groupStage}
+      playoffBracket={playoffBracket}
+      playoffMatches={playoffMatches}
+    />
+  </div>
+);
 }
