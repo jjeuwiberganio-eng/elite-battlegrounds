@@ -4,12 +4,15 @@ import {
   getTournamentControl,
   getStandings,
   getPlayoffQualifiers,
+  getPlayoffStandings,
   getTournamentStatistics,
   getRecentMatchResults,
 } from "@/actions/standings";
 
 import StandingsHeroSection from "@/components/standings/hero/StandingsHeroSection";
 import GroupTabs from "@/components/standings/navigation/GroupTabs";
+import StandingsViews from "@/components/standings/navigation/StandingsViews";
+import PlayoffStandingsTable from "@/components/standings/playoffs/PlayoffStandingsTable";
 import StandingsTable from "@/components/standings/table/StandingsTable";
 import TournamentStatisticsSection from "@/components/standings/statistics/TournamentStatisticsSection";
 import RecentResultsSection from "@/components/standings/results/RecentResultsSection";
@@ -30,12 +33,14 @@ export default async function StandingsPage() {
     statistics,
     recentResults,
     qualifiers,
+    playoffStandings,
   ] = await Promise.all([
     getTournamentControl(),
     getStandings(),
     getTournamentStatistics(),
     getRecentMatchResults(),
     getPlayoffQualifiers(),
+    getPlayoffStandings(),
   ]);
 
   return (
@@ -46,27 +51,42 @@ export default async function StandingsPage() {
 
       <section className="bg-white pb-16 pt-10">
         <div className="container mx-auto max-w-[1500px] px-6">
-          <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_380px] lg:items-start">
-            <div>
-              <GroupTabs
-                groups={standings.groups}
-                defaultGroup={
-                  standings.defaultGroup
+          <StandingsViews
+            groupView={
+              <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_380px] lg:items-start">
+                <div>
+                  <GroupTabs
+                    groups={standings.groups}
+                    defaultGroup={
+                      standings.defaultGroup
+                    }
+                  />
+
+                  <StandingsTable
+                    standings={standings}
+                  />
+                </div>
+
+                <PlayoffQualifiersSection
+                  groups={qualifiers}
+                  playoffSize={
+                    tournament.playoffSize
+                  }
+                />
+              </div>
+            }
+            playoffView={
+              <PlayoffStandingsTable
+                rows={playoffStandings.rows}
+                eliminationLosses={
+                  playoffStandings.eliminationLosses
+                }
+                hasResults={
+                  playoffStandings.hasResults
                 }
               />
-
-              <StandingsTable
-                standings={standings}
-              />
-            </div>
-
-            <PlayoffQualifiersSection
-              qualifiers={qualifiers}
-              playoffSize={
-                tournament.playoffSize
-              }
-            />
-          </div>
+            }
+          />
 
           <div className="mt-10 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_460px]">
             <TournamentStatisticsSection

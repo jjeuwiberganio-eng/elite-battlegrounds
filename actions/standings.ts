@@ -1,6 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getPlayoffLayout, slotSeed } from "@/lib/playoff-slots";
+import { TIEBREAKER_ROUND_NAME } from "@/lib/tiebreaker-constants";
+import { getTiebreakerRecords } from "@/lib/tiebreakers";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/src/auth/permissions";
 import { USER_ROLES } from "@/src/lib/constants";
@@ -110,6 +113,12 @@ export interface StandingRow {
   gameLosses: number;
   points: number;
   gameDiff: number;
+
+  /* Completed tiebreaker matches - they do not count toward the stats above. */
+  tiebreaker: {
+    wins: number;
+    losses: number;
+  };
 }
 
 export interface StandingsData {
@@ -184,6 +193,27 @@ export async function getStandings(): Promise<StandingsData> {
       },
     });
 
+  const tiebreakers = await getTiebreakerRecords(
+    tournament.id,
+  );
+
+  /*
+   * Order: points, then game wins (as before), then - only for teams
+   * still level - whoever won their tiebreaker match ranks higher.
+   * Array.sort is stable, so anything still tied keeps its order.
+   */
+  const orderedStandings = [...standings].sort(
+    (a, b) =>
+      b.points - a.points ||
+      b.gameWins - a.gameWins ||
+      (tiebreakers.get(
+        b.tournamentRegistrationId,
+      )?.wins ?? 0) -
+        (tiebreakers.get(
+          a.tournamentRegistrationId,
+        )?.wins ?? 0),
+  );
+
   const groupSlugById = new Map(
     groups.map((group) => [
       group.id,
@@ -196,7 +226,7 @@ export async function getStandings(): Promise<StandingsData> {
     number
   >();
 
-  const rows: StandingRow[] = standings.map(
+  const rows: StandingRow[] = orderedStandings.map(
     (standing) => {
       const groupSlug =
         standing.tournamentGroupId
@@ -242,6 +272,9 @@ export async function getStandings(): Promise<StandingsData> {
         gameDiff:
           standing.gameWins -
           standing.gameLosses,
+        tiebreaker: tiebreakers.get(
+          standing.tournamentRegistrationId,
+        ) ?? { wins: 0, losses: 0 },
       };
     },
   );
@@ -263,24 +296,63 @@ export async function getStandings(): Promise<StandingsData> {
 |--------------------------------------------------------------------------
 */
 
-export interface PlayoffQualifier {
-  seed: number;
+export interface PlayoffQualifierSlot {
+  rank: number;
   team: {
     id: string;
     name: string;
     logo: string | null;
-  };
-  groupName: string;
+  } | null;
 }
 
+export interface PlayoffQualifierGroup {
+  id: string;
+  name: string;
+  slots: PlayoffQualifierSlot[];
+}
+
+/*
+ * Qualifiers laid out per group (Group A: Top 1/2/3, Group B: ...).
+ * Empty slots come back with team: null so the page can show "TBD".
+ * See lib/playoff-slots.ts for how a slot maps to the stored seed.
+ */
 export async function getPlayoffQualifiers(): Promise<
-  PlayoffQualifier[]
+  PlayoffQualifierGroup[]
 > {
   const tournament = await getCurrentTournament();
 
   if (!tournament) {
     return [];
   }
+
+  const groupStage =
+    await getGroupStage(tournament.id);
+
+  if (!groupStage) {
+    return [];
+  }
+
+  const groups =
+    await prisma.tournamentGroup.findMany({
+      where: {
+        tournamentStageId: groupStage.id,
+      },
+      orderBy: {
+        displayOrder: "asc",
+      },
+    });
+
+  if (groups.length === 0) {
+    return [];
+  }
+
+  const control =
+    await getTournamentControl();
+
+  const { perGroup } = getPlayoffLayout(
+    control.playoffSize,
+    groups.length,
+  );
 
   const qualifications =
     await prisma.playoffQualification.findMany(
@@ -296,9 +368,6 @@ export async function getPlayoffQualifiers(): Promise<
             },
           },
         },
-        orderBy: {
-          seed: "asc",
-        },
         include: {
           tournamentRegistration: {
             include: {
@@ -307,32 +376,290 @@ export async function getPlayoffQualifiers(): Promise<
                   logo: true,
                 },
               },
-              tournamentGroup: true,
             },
           },
         },
       },
     );
 
-  return qualifications.map(
-    (qualification) => ({
-      seed: qualification.seed,
-      team: {
-        id: qualification
-          .tournamentRegistration.team
-          .id,
-        name: qualification
-          .tournamentRegistration.team
-          .name,
-        logo:
-          qualification.tournamentRegistration
-            .team.logo?.url ?? null,
+  return groups.map((group, groupIndex) => ({
+    id: group.id,
+    name: group.name,
+    slots: Array.from(
+      { length: perGroup },
+      (_, index) => {
+        const rank = index + 1;
+
+        const qualification =
+          qualifications.find(
+            (item) =>
+              item.seed ===
+                slotSeed(
+                  groupIndex,
+                  rank,
+                  perGroup,
+                ) &&
+              // A team moved to another group since being placed
+              // no longer holds a place in this one.
+              item.tournamentRegistration
+                .tournamentGroupId === group.id,
+          );
+
+        const team =
+          qualification?.tournamentRegistration
+            .team;
+
+        return {
+          rank,
+          team: team
+            ? {
+                id: team.id,
+                name: team.name,
+                logo: team.logo?.url ?? null,
+              }
+            : null,
+        };
       },
-      groupName:
-        qualification.tournamentRegistration
-          .tournamentGroup?.name ?? "",
+    ),
+  }));
+}
+
+/*
+|--------------------------------------------------------------------------
+| Playoff Standings
+|--------------------------------------------------------------------------
+| Calculated live from the bracket: whenever the Super Admin records (or
+| resets) a playoff result in the bracket, these numbers follow - there
+| is no separate table to keep in sync. Every team currently placed in a
+| bracket slot is listed, with 0 played until its first result.
+*/
+
+export interface PlayoffStandingRow {
+  rank: number;
+  registrationId: string;
+  team: {
+    id: string;
+    name: string;
+    logo: string | null;
+  };
+  played: number;
+  wins: number;
+  losses: number;
+  winRate: number;
+  gameWins: number;
+  gameLosses: number;
+  gameDiff: number;
+  eliminated: boolean;
+}
+
+export interface PlayoffStandingsData {
+  rows: PlayoffStandingRow[];
+
+  /* Losses that knock a team out (2 for double elimination, 1 for single). */
+  eliminationLosses: number;
+
+  hasResults: boolean;
+}
+
+export async function getPlayoffStandings(): Promise<PlayoffStandingsData> {
+  const empty: PlayoffStandingsData = {
+    rows: [],
+    eliminationLosses: 2,
+    hasResults: false,
+  };
+
+  const tournament = await getCurrentTournament();
+
+  if (!tournament) {
+    return empty;
+  }
+
+  const [playoffStage, bracket] = await Promise.all([
+    prisma.tournamentStage.findFirst({
+      where: {
+        tournamentId: tournament.id,
+        type: {
+          in: [
+            "DOUBLE_ELIMINATION",
+            "SINGLE_ELIMINATION",
+            "GRAND_FINAL",
+          ],
+        },
+      },
+      orderBy: {
+        displayOrder: "asc",
+      },
+      select: {
+        type: true,
+      },
     }),
+
+    prisma.playoffBracket.findUnique({
+      where: {
+        tournamentId: tournament.id,
+      },
+      include: {
+        slots: {
+          include: {
+            teamARegistration: {
+              include: {
+                team: {
+                  include: {
+                    logo: true,
+                  },
+                },
+              },
+            },
+            teamBRegistration: {
+              include: {
+                team: {
+                  include: {
+                    logo: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    }),
+  ]);
+
+  const eliminationLosses =
+    playoffStage?.type === "SINGLE_ELIMINATION" ? 1 : 2;
+
+  if (!bracket) {
+    return { ...empty, eliminationLosses };
+  }
+
+  type Tally = {
+    registrationId: string;
+    team: { id: string; name: string; logo: string | null };
+    played: number;
+    wins: number;
+    losses: number;
+    gameWins: number;
+    gameLosses: number;
+  };
+
+  const tallies = new Map<string, Tally>();
+
+  function tallyFor(
+    registration:
+      | {
+          id: string;
+          team: {
+            id: string;
+            name: string;
+            deletedAt: Date | null;
+            logo: { url: string } | null;
+          };
+        }
+      | null,
+  ) {
+    if (!registration || registration.team.deletedAt) {
+      return null;
+    }
+
+    let tally = tallies.get(registration.id);
+
+    if (!tally) {
+      tally = {
+        registrationId: registration.id,
+        team: {
+          id: registration.team.id,
+          name: registration.team.name,
+          logo: registration.team.logo?.url ?? null,
+        },
+        played: 0,
+        wins: 0,
+        losses: 0,
+        gameWins: 0,
+        gameLosses: 0,
+      };
+
+      tallies.set(registration.id, tally);
+    }
+
+    return tally;
+  }
+
+  let hasResults = false;
+
+  for (const slot of bracket.slots) {
+    const teamA = tallyFor(slot.teamARegistration);
+    const teamB = tallyFor(slot.teamBRegistration);
+
+    if (!slot.isCompleted || !teamA || !teamB) {
+      continue;
+    }
+
+    /*
+     * The recorded winner decides the result. If a winner wasn't
+     * stored, fall back to the higher score; a level score with no
+     * winner can't be counted.
+     */
+    const winnerId =
+      slot.winnerRegistrationId ??
+      (slot.scoreA > slot.scoreB
+        ? teamA.registrationId
+        : slot.scoreB > slot.scoreA
+          ? teamB.registrationId
+          : null);
+
+    if (!winnerId) {
+      continue;
+    }
+
+    hasResults = true;
+
+    teamA.played += 1;
+    teamB.played += 1;
+
+    teamA.gameWins += slot.scoreA;
+    teamA.gameLosses += slot.scoreB;
+    teamB.gameWins += slot.scoreB;
+    teamB.gameLosses += slot.scoreA;
+
+    if (winnerId === teamA.registrationId) {
+      teamA.wins += 1;
+      teamB.losses += 1;
+    } else {
+      teamB.wins += 1;
+      teamA.losses += 1;
+    }
+  }
+
+  const sorted = [...tallies.values()].sort(
+    (a, b) =>
+      b.wins - a.wins ||
+      a.losses - b.losses ||
+      b.gameWins -
+        b.gameLosses -
+        (a.gameWins - a.gameLosses) ||
+      a.team.name.localeCompare(b.team.name),
   );
+
+  return {
+    eliminationLosses,
+    hasResults,
+    rows: sorted.map((tally, index) => ({
+      rank: index + 1,
+      registrationId: tally.registrationId,
+      team: tally.team,
+      played: tally.played,
+      wins: tally.wins,
+      losses: tally.losses,
+      winRate:
+        tally.played > 0
+          ? Math.round((tally.wins / tally.played) * 1000) / 10
+          : 0,
+      gameWins: tally.gameWins,
+      gameLosses: tally.gameLosses,
+      gameDiff: tally.gameWins - tally.gameLosses,
+      eliminated: tally.losses >= eliminationLosses,
+    })),
+  };
 }
 
 /*
@@ -376,6 +703,9 @@ export async function getTournamentStatistics(): Promise<TournamentStatistics> {
           tournamentId: tournament.id,
         },
         status: "COMPLETED",
+        roundName: {
+          not: TIEBREAKER_ROUND_NAME,
+        },
       },
     }),
 
@@ -394,6 +724,9 @@ export async function getTournamentStatistics(): Promise<TournamentStatistics> {
             tournamentId: tournament.id,
           },
           status: "COMPLETED",
+          roundName: {
+            not: TIEBREAKER_ROUND_NAME,
+          },
         },
       },
       _sum: {
@@ -673,7 +1006,17 @@ export async function recalculateStandings(): Promise<{
         include: {
           participants: {
             include: {
-              match: true,
+              /*
+               * The match's OWN participants are needed to find each
+               * opponent's score. registration.participants only holds
+               * this team's side, so the opponent could never be found
+               * and "game losses" always came out as 0.
+               */
+              match: {
+                include: {
+                  participants: true,
+                },
+              },
             },
           },
         },
@@ -682,11 +1025,22 @@ export async function recalculateStandings(): Promise<{
 
   await prisma.$transaction(
     registrations.map((registration) => {
+      /*
+       * Only completed GROUP STAGE matches count, and tiebreaker
+       * matches are skipped on purpose - they decide who ranks higher
+       * when teams are level, but never add wins, losses, maps or
+       * points.
+       */
       const completedParticipations =
         registration.participants.filter(
           (participant) =>
             participant.match.status ===
-            "COMPLETED",
+              "COMPLETED" &&
+            participant.match
+              .tournamentStageId ===
+              groupStage.id &&
+            participant.match.roundName !==
+              TIEBREAKER_ROUND_NAME,
         );
 
       const wins =
@@ -710,13 +1064,11 @@ export async function recalculateStandings(): Promise<{
         completedParticipations.reduce(
           (sum, participant) => {
             const opponent =
-              registration.participants.find(
+              participant.match.participants.find(
                 (other) =>
-                  other.matchId ===
-                    participant.matchId &&
                   other
                     .tournamentRegistrationId !==
-                    participant.tournamentRegistrationId,
+                  participant.tournamentRegistrationId,
               );
 
             return (

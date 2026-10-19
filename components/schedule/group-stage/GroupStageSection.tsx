@@ -18,6 +18,7 @@ interface Match {
   bestOf: string;
   streamUrl?: string;
   status?: string;
+  isTiebreaker?: boolean;
 }
 
 interface Day {
@@ -187,9 +188,18 @@ function MatchCard({ match }: Readonly<{ match: Match }>) {
       {/* Card header: match number + status left, format right */}
       <div className="mb-5 flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2">
-          <span className="text-xs font-semibold text-slate-500">
-            {match.matchNumber ? `Match ${match.matchNumber}` : "Match"}
-          </span>
+          {match.isTiebreaker ? (
+            <span
+              title="Played to break a tie. Doesn't count toward the standings."
+              className="rounded-full bg-violet-100 px-2 py-0.5 text-[11px] font-bold text-violet-700"
+            >
+              Tiebreaker
+            </span>
+          ) : (
+            <span className="text-xs font-semibold text-slate-500">
+              {match.matchNumber ? `Match ${match.matchNumber}` : "Match"}
+            </span>
+          )}
 
           <span
             className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-bold ${status.className}`}

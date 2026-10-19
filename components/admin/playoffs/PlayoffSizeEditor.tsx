@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Pencil, Check, X } from "lucide-react";
 
 import { updatePlayoffSize } from "@/actions/playoffs";
@@ -52,7 +53,9 @@ export default function PlayoffSizeEditor({
       setLoading(true);
       setError(null);
 
-      await updatePlayoffSize(parsed);
+      const result = await updatePlayoffSize(parsed);
+
+      toast.success(result.message);
 
       setEditing(false);
       router.refresh();

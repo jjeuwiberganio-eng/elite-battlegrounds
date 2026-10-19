@@ -23,6 +23,7 @@ interface ScheduleContentProps {
         bestOf: string;
         streamUrl?: string;
         status: string;
+        isTiebreaker: boolean;
 
         teamA: {
           id: string;

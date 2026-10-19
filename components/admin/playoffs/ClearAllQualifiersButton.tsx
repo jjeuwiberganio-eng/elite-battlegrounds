@@ -20,7 +20,7 @@ export default function ClearAllQualifiersButton() {
     const confirmed = await confirm({
       title: "Remove all playoff qualifiers?",
       description:
-        "This clears every team's seed. You'll need to reassign them once the group stage finishes. This can't be undone.",
+        "This empties every group's qualifying places. You'll need to assign them again once the group stage finishes. This can't be undone.",
       confirmLabel: "Clear qualifiers",
     });
 

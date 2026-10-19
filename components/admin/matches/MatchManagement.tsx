@@ -18,7 +18,10 @@ import {
 
 import { useConfirm } from "@/components/admin/shared/ConfirmProvider";
 
+import { isTiebreakerRound } from "@/lib/tiebreaker-constants";
+
 import BulkMatchForm from "@/components/admin/matches/BulkMatchForm";
+import TiebreakerMatchForm from "@/components/admin/matches/TiebreakerMatchForm";
 import MatchForm, {
   type MatchFormValues,
 } from "@/components/admin/matches/MatchForm";
@@ -32,6 +35,8 @@ interface TeamOption {
   name: string;
   registrationId: string;
   logo?: unknown;
+  groupId: string | null;
+  groupName: string | null;
 }
 
 interface StageOption {
@@ -257,7 +262,7 @@ export default function MatchManagement({
 
   /* Single vs. bulk creation. */
   const [createMode, setCreateMode] =
-    useState<"single" | "bulk">("single");
+    useState<"single" | "bulk" | "tiebreaker">("single");
 
   /* Bumped after a create so the form remounts empty. */
   const [formKey, setFormKey] = useState(0);
@@ -545,6 +550,7 @@ export default function MatchManagement({
               [
                 ["single", "Single match"],
                 ["bulk", "Multiple at once"],
+                ["tiebreaker", "Tiebreaker"],
               ] as const
             ).map(([mode, label]) => (
               <button
@@ -573,6 +579,16 @@ export default function MatchManagement({
               loading={creating}
               submitLabel="Create Match"
               onSubmit={handleCreateMatch}
+            />
+          ) : createMode === "tiebreaker" ? (
+            <TiebreakerMatchForm
+              key={formKey}
+              teams={teams}
+              scheduleDays={scheduleDays}
+              onCreated={() => {
+                setFormKey((current) => current + 1);
+                refresh();
+              }}
             />
           ) : (
             <BulkMatchForm
@@ -779,6 +795,15 @@ export default function MatchManagement({
                         <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-bold uppercase text-slate-300">
                           {match.bestOf}
                         </span>
+
+                        {isTiebreakerRound(match.roundName) && (
+                          <span
+                            title="Doesn't count toward the standings"
+                            className="rounded-full border border-violet-500/40 bg-violet-500/10 px-3 py-1 text-xs font-bold uppercase text-violet-300"
+                          >
+                            Tiebreaker · not counted
+                          </span>
+                        )}
 
                         <span
                           className={`rounded-full border px-3 py-1 text-xs font-bold uppercase ${statusClassName(

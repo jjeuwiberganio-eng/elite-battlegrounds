@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Search, Crown } from "lucide-react";
 
 import TeamLogo from "@/components/common/TeamLogo";
+import TiebreakerTags from "@/components/standings/table/TiebreakerTags";
 
 interface StandingRow {
   id: string;
@@ -23,6 +24,10 @@ interface StandingRow {
   gameLosses: number;
   points: number;
   gameDiff: number;
+  tiebreaker: {
+    wins: number;
+    losses: number;
+  };
 }
 
 interface StandingsData {
@@ -161,6 +166,15 @@ export default function StandingsTable({
                       {row.points}
                     </span>
                   </div>
+
+                  {(row.tiebreaker.wins > 0 ||
+                    row.tiebreaker.losses > 0) && (
+                    <div className="px-4 pt-2.5">
+                      <TiebreakerTags
+                        tiebreaker={row.tiebreaker}
+                      />
+                    </div>
+                  )}
 
                   <div className="mt-3 grid grid-cols-4 divide-x divide-slate-100 border-t border-slate-100 bg-slate-50/60 text-center">
                     <div className="px-1.5 py-2.5">
@@ -336,9 +350,15 @@ export default function StandingsTable({
                             size="md"
                           />
 
-                          <span className="truncate font-bold uppercase text-slate-900">
-                            {row.team.name}
-                          </span>
+                          <div className="min-w-0">
+                            <span className="block truncate font-bold uppercase text-slate-900">
+                              {row.team.name}
+                            </span>
+
+                            <TiebreakerTags
+                              tiebreaker={row.tiebreaker}
+                            />
+                          </div>
                         </div>
                       </td>
 
@@ -395,7 +415,10 @@ export default function StandingsTable({
 
       <p className="mt-4 text-xs text-slate-400">
         Standings are updated automatically
-        after each match.
+        after each match. Tiebreaker matches
+        don&apos;t count toward the standings -
+        the winner is simply ranked above the team
+        they beat.
       </p>
     </div>
   );

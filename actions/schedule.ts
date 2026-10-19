@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { TIEBREAKER_ROUND_NAME } from "@/lib/tiebreaker-constants";
 
 /*
 |--------------------------------------------------------------------------
@@ -214,6 +215,10 @@ export async function getGroupStageSchedule() {
                   undefined,
 
                 status: match.status,
+
+                isTiebreaker:
+                  match.roundName ===
+                  TIEBREAKER_ROUND_NAME,
 
                 teamA: {
                   id:

@@ -7,6 +7,7 @@ import { recalculateStandings } from "@/actions/standings";
 import { actionError, type ActionResult } from "@/lib/action-result";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/src/auth/permissions";
+import { TIEBREAKER_ROUND_NAME } from "@/lib/tiebreaker-constants";
 import { USER_ROLES } from "@/src/lib/constants";
 
 export async function getAdminMatches() {
@@ -91,6 +92,7 @@ export async function getMatchFormData() {
               logo: true,
             },
           },
+          tournamentGroup: true,
         },
 
         orderBy: {
@@ -130,6 +132,8 @@ export async function getMatchFormData() {
       name: registration.team.name,
       registrationId: registration.id,
       logo: registration.team.logo,
+      groupId: registration.tournamentGroupId,
+      groupName: registration.tournamentGroup?.name ?? null,
     })),
     scheduleDays,
   };
@@ -401,6 +405,152 @@ export async function createMatch(
     return { ok: true, matchId: match.id };
   } catch (error) {
     return actionError(error, "Failed to create the match.");
+  }
+}
+
+/*
+|--------------------------------------------------------------------------
+| Create Tiebreaker Match
+|--------------------------------------------------------------------------
+| A Group Stage match between two teams of the SAME group that are level
+| on the standings. It is recorded like any other match (Record Result),
+| but it never counts toward wins, losses, maps or points - the standings
+| only show a "Tiebreaker Win / Loss" tag and rank the winner higher.
+| See lib/tiebreaker-constants.ts.
+|
+| The match number is the next free one in the Group Stage, so it never
+| clashes with a regular match.
+*/
+export async function createTiebreakerMatch(data: {
+  teamAId: string;
+  teamBId: string;
+  scheduleDayId: string;
+  scheduledAt: string;
+  bestOf: BestOf;
+  streamUrl?: string;
+}): Promise<ActionResult<{ matchId: string; matchNumber: number }>> {
+  try {
+    await requireRole(USER_ROLES.SUPER_ADMIN);
+
+    if (!data.teamAId || !data.teamBId) {
+      throw new Error("Both teams are required.");
+    }
+
+    if (data.teamAId === data.teamBId) {
+      throw new Error("Teams must be different.");
+    }
+
+    if (!data.scheduleDayId) {
+      throw new Error("Choose a schedule day.");
+    }
+
+    if (!data.scheduledAt) {
+      throw new Error("Choose the start time.");
+    }
+
+    const tournament = await prisma.tournament.findFirst({
+      where: {
+        deletedAt: null,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!tournament) {
+      throw new Error("No tournament found.");
+    }
+
+    const groupStage = await prisma.tournamentStage.findFirst({
+      where: {
+        tournamentId: tournament.id,
+        slug: "group-stage",
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!groupStage) {
+      throw new Error("No Group Stage found for this tournament.");
+    }
+
+    const registrations =
+      await prisma.tournamentRegistration.findMany({
+        where: {
+          tournamentId: tournament.id,
+          teamId: { in: [data.teamAId, data.teamBId] },
+          status: "APPROVED",
+        },
+        select: {
+          teamId: true,
+          tournamentGroupId: true,
+        },
+      });
+
+    const registrationA = registrations.find(
+      (registration) => registration.teamId === data.teamAId,
+    );
+
+    const registrationB = registrations.find(
+      (registration) => registration.teamId === data.teamBId,
+    );
+
+    if (!registrationA || !registrationB) {
+      throw new Error(
+        "Both teams must have an approved tournament registration.",
+      );
+    }
+
+    if (
+      !registrationA.tournamentGroupId ||
+      registrationA.tournamentGroupId !==
+        registrationB.tournamentGroupId
+    ) {
+      throw new Error(
+        "A tiebreaker is played between two teams of the same group.",
+      );
+    }
+
+    const highest = await prisma.match.aggregate({
+      where: { tournamentStageId: groupStage.id },
+      _max: { matchNumber: true },
+    });
+
+    const matchNumber = (highest._max.matchNumber ?? 0) + 1;
+
+    const payload = await prepareMatch({
+      matchNumber,
+      tournamentStageId: groupStage.id,
+      scheduleDayId: data.scheduleDayId,
+      scheduledAt: data.scheduledAt,
+      bestOf: data.bestOf,
+      streamUrl: data.streamUrl,
+      teamAId: data.teamAId,
+      teamBId: data.teamBId,
+      status: "upcoming",
+    });
+
+    const match = await prisma.match.create({
+      data: {
+        ...payload,
+        roundName: TIEBREAKER_ROUND_NAME,
+        tournamentGroupId: registrationA.tournamentGroupId,
+      },
+      select: { id: true },
+    });
+
+    revalidateMatchPaths();
+
+    return { ok: true, matchId: match.id, matchNumber };
+  } catch (error) {
+    return actionError(
+      error,
+      "Failed to create the tiebreaker match.",
+    );
   }
 }
 

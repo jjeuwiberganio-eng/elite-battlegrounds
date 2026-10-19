@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import {
   getTournamentControl,
   getPlayoffTeams,
-  getQualifiedTeams,
+  getPlayoffQualifierEditor,
 } from "@/actions/playoffs";
 
 import ClearAllQualifiersButton from "@/components/admin/playoffs/ClearAllQualifiersButton";
@@ -23,18 +23,18 @@ export default async function PlayoffsPage() {
   const [
     tournament,
     playoffTeams,
-    qualifiedTeams,
+    qualifierEditor,
   ] = await Promise.all([
     getTournamentControl(),
     getPlayoffTeams(),
-    getQualifiedTeams(),
+    getPlayoffQualifierEditor(),
   ]);
 
   return (
     <div className="space-y-8">
       <PageHeader
         title="Playoff Management"
-        description="Manually select the teams that will participate in the playoff bracket."
+        description="Choose the top teams from each group that qualify for the playoffs."
         breadcrumbs={[
           {
             label: "Dashboard",
@@ -56,8 +56,10 @@ export default async function PlayoffsPage() {
         </h2>
 
         <p className="mt-2 text-sm leading-6 text-slate-400">
-          Select exactly {tournament.playoffSize} approved
-          teams and assign each team a playoff seed.
+          {tournament.playoffSize} teams qualify:{" "}
+          {qualifierEditor.perGroup} from each of the{" "}
+          {qualifierEditor.groups.length} groups. Pick who holds
+          each place below.
         </p>
 
         <PlayoffSizeEditor
@@ -70,9 +72,17 @@ export default async function PlayoffsPage() {
       <ClearAllQualifiersButton />
 
       <QualifiedTeamsCard
+        /*
+         * Remount when the saved qualifiers change (saved here, or
+         * cleared elsewhere) so the editor never shows stale picks.
+         */
+        key={JSON.stringify(qualifierEditor.assignments)}
         teams={playoffTeams}
-        qualifiedTeams={qualifiedTeams}
+        groups={qualifierEditor.groups}
+        perGroup={qualifierEditor.perGroup}
         playoffSize={tournament.playoffSize}
+        evenSplit={qualifierEditor.evenSplit}
+        assignments={qualifierEditor.assignments}
       />
     </div>
   );

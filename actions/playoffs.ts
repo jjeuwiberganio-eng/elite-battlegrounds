@@ -2,6 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 
+import { actionError, type ActionResult } from "@/lib/action-result";
+import {
+  decodeSeed,
+  getPlayoffLayout,
+  slotSeed,
+} from "@/lib/playoff-slots";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/src/auth/permissions";
 import { USER_ROLES } from "@/src/lib/constants";
@@ -23,6 +29,41 @@ async function getCurrentTournament() {
   }
 
   return tournament;
+}
+
+/*
+ * The groups qualifiers are chosen from (Group A, B, C, D...), in
+ * display order. Same group-stage lookup the public standings use.
+ */
+async function getQualifierGroups(tournamentId: string) {
+  const groupStage = await prisma.tournamentStage.findFirst({
+    where: {
+      tournamentId,
+      type: {
+        in: ["GROUP_STAGE", "ROUND_ROBIN"],
+      },
+    },
+    orderBy: {
+      displayOrder: "asc",
+    },
+  });
+
+  if (!groupStage) {
+    return [];
+  }
+
+  return prisma.tournamentGroup.findMany({
+    where: {
+      tournamentStageId: groupStage.id,
+    },
+    orderBy: {
+      displayOrder: "asc",
+    },
+    select: {
+      id: true,
+      name: true,
+    },
+  });
 }
 
 /**
@@ -79,6 +120,11 @@ export async function getPlayoffTeams() {
 
     playerCount:
       registration.team.players.length,
+
+    groupId: registration.tournamentGroup?.id ?? null,
+
+    groupName:
+      registration.tournamentGroup?.name ?? null,
 
     qualified:
       registration.playoffQualification !== null,
@@ -144,9 +190,10 @@ export async function getPlayoffQualifications() {
 }
 
 /**
- * Manually qualify a team for the playoffs.
- *
- * The seed is controlled by the Super Admin.
+ * LEGACY / unused: sets a raw seed number. Qualifiers are now edited per
+ * group through savePlayoffQualifiersByGroup(), where the seed encodes
+ * the group slot (see lib/playoff-slots.ts) - calling this with an
+ * arbitrary seed would put a team in the wrong slot.
  */
 export async function assignPlayoffQualification(
   tournamentRegistrationId: string,
@@ -371,6 +418,28 @@ export async function updatePlayoffSize(
     );
   }
 
+  /*
+   * Qualifier slots are laid out per group (see lib/playoff-slots.ts),
+   * so the playoff size decides how many places each group gets. If
+   * that number changes, every stored seed would point at a different
+   * slot - so the old assignments are cleared instead of silently
+   * moving teams between groups.
+   */
+  const groups = await getQualifierGroups(tournament.id);
+
+  const previousLayout = getPlayoffLayout(
+    playoffStage.maxTeams ?? 8,
+    groups.length,
+  );
+
+  const nextLayout = getPlayoffLayout(
+    newSize,
+    groups.length,
+  );
+
+  const layoutChanged =
+    previousLayout.perGroup !== nextLayout.perGroup;
+
   await prisma.$transaction([
     prisma.tournamentStage.update({
       where: {
@@ -382,12 +451,16 @@ export async function updatePlayoffSize(
     }),
 
     prisma.playoffQualification.deleteMany({
-      where: {
-        tournamentId: tournament.id,
-        seed: {
-          gt: newSize,
-        },
-      },
+      where: layoutChanged
+        ? {
+            tournamentId: tournament.id,
+          }
+        : {
+            tournamentId: tournament.id,
+            seed: {
+              gt: nextLayout.totalSlots,
+            },
+          },
     }),
   ]);
 
@@ -399,7 +472,11 @@ export async function updatePlayoffSize(
 
   return {
     success: true,
-    message: `Playoff size updated to ${newSize} teams.`,
+    message: layoutChanged
+      ? `Playoff size updated to ${newSize} teams. Each group now has ${nextLayout.perGroup} qualifying ${
+          nextLayout.perGroup === 1 ? "place" : "places"
+        }, so the saved qualifiers were cleared - assign them again.`
+      : `Playoff size updated to ${newSize} teams.`,
   };
 }
 
@@ -407,6 +484,330 @@ export async function getQualifiedTeams() {
   return getPlayoffQualifications();
 }
 
+/**
+ * Everything the qualifier editor needs: the groups, how many places
+ * each group has, and which team currently holds each slot.
+ */
+export async function getPlayoffQualifierEditor() {
+  await requireRole(SUPER_ADMIN);
+
+  const tournament = await getCurrentTournament();
+  const control = await getTournamentControl();
+  const groups = await getQualifierGroups(tournament.id);
+
+  const layout = getPlayoffLayout(
+    control.playoffSize,
+    groups.length,
+  );
+
+  /*
+   * Only slots whose team is still approved, not deleted and still in
+   * that slot's group are shown as filled. A stale one (team deleted
+   * or moved to another group since) simply reads as empty and is
+   * dropped the next time the qualifiers are saved.
+   */
+  const qualifications =
+    await prisma.playoffQualification.findMany({
+      where: {
+        tournamentId: tournament.id,
+        tournamentRegistration: {
+          status: "APPROVED",
+          team: {
+            deletedAt: null,
+          },
+        },
+      },
+      select: {
+        seed: true,
+        tournamentRegistrationId: true,
+        tournamentRegistration: {
+          select: {
+            tournamentGroupId: true,
+          },
+        },
+      },
+    });
+
+  const assignments = qualifications.flatMap(
+    (qualification) => {
+      if (layout.perGroup === 0) {
+        return [];
+      }
+
+      const { groupIndex, rank } = decodeSeed(
+        qualification.seed,
+        layout.perGroup,
+      );
+
+      const group = groups[groupIndex];
+
+      if (
+        !group ||
+        qualification.tournamentRegistration
+          .tournamentGroupId !== group.id
+      ) {
+        return [];
+      }
+
+      return [
+        {
+          groupId: group.id,
+          rank,
+          registrationId:
+            qualification.tournamentRegistrationId,
+        },
+      ];
+    },
+  );
+
+  return {
+    groups,
+    perGroup: layout.perGroup,
+    playoffSize: control.playoffSize,
+    evenSplit: layout.evenSplit,
+    assignments,
+  };
+}
+
+/**
+ * Save the playoff qualifiers, one entry per filled slot
+ * (Group A Top 1, Group A Top 2, ...). Empty slots are simply left out,
+ * so qualifiers can be filled in as each group finishes.
+ *
+ * Replaces all existing qualifiers in one transaction.
+ */
+export async function savePlayoffQualifiersByGroup(
+  slots: Array<{
+    groupId: string;
+    rank: number;
+    registrationId: string;
+  }>,
+): Promise<ActionResult> {
+  try {
+    await requireRole(SUPER_ADMIN);
+
+    const tournament = await getCurrentTournament();
+    const control = await getTournamentControl();
+    const groups = await getQualifierGroups(tournament.id);
+
+    if (groups.length === 0) {
+      throw new Error(
+        "There are no groups yet. Create the group stage groups first.",
+      );
+    }
+
+    const { perGroup } = getPlayoffLayout(
+      control.playoffSize,
+      groups.length,
+    );
+
+    const seenRegistrations = new Set<string>();
+    const seenSlots = new Set<string>();
+
+    for (const slot of slots) {
+      const groupIndex = groups.findIndex(
+        (group) => group.id === slot.groupId,
+      );
+
+      if (groupIndex === -1) {
+        throw new Error("One of the groups no longer exists.");
+      }
+
+      if (
+        !Number.isInteger(slot.rank) ||
+        slot.rank < 1 ||
+        slot.rank > perGroup
+      ) {
+        throw new Error(
+          `Each group only has ${perGroup} qualifying places (Top 1 to Top ${perGroup}).`,
+        );
+      }
+
+      const slotKey = `${slot.groupId}:${slot.rank}`;
+
+      if (seenSlots.has(slotKey)) {
+        throw new Error("A slot was filled more than once.");
+      }
+
+      if (seenRegistrations.has(slot.registrationId)) {
+        throw new Error(
+          "A team can only hold one qualifying place.",
+        );
+      }
+
+      seenSlots.add(slotKey);
+      seenRegistrations.add(slot.registrationId);
+    }
+
+    const registrations =
+      await prisma.tournamentRegistration.findMany({
+        where: {
+          id: {
+            in: slots.map((slot) => slot.registrationId),
+          },
+          tournamentId: tournament.id,
+          status: "APPROVED",
+          team: {
+            deletedAt: null,
+          },
+        },
+        select: {
+          id: true,
+          tournamentGroupId: true,
+          team: {
+            select: {
+              name: true,
+            },
+          },
+        },
+      });
+
+    const registrationById = new Map(
+      registrations.map((registration) => [
+        registration.id,
+        registration,
+      ]),
+    );
+
+    for (const slot of slots) {
+      const registration = registrationById.get(
+        slot.registrationId,
+      );
+
+      if (!registration) {
+        throw new Error(
+          "One or more selected teams are not approved registrations.",
+        );
+      }
+
+      if (registration.tournamentGroupId !== slot.groupId) {
+        throw new Error(
+          `${registration.team.name} isn't in that group, so it can't hold one of its places.`,
+        );
+      }
+    }
+
+    const data = slots.map((slot) => ({
+      tournamentId: tournament.id,
+      tournamentRegistrationId: slot.registrationId,
+      seed: slotSeed(
+        groups.findIndex(
+          (group) => group.id === slot.groupId,
+        ),
+        slot.rank,
+        perGroup,
+      ),
+    }));
+
+    await prisma.$transaction([
+      prisma.playoffQualification.deleteMany({
+        where: {
+          tournamentId: tournament.id,
+        },
+      }),
+
+      prisma.playoffQualification.createMany({
+        data,
+      }),
+    ]);
+
+    revalidatePath("/admin/playoffs");
+    revalidatePath("/standings");
+    revalidatePath("/schedule");
+    revalidatePath("/");
+
+    return { ok: true };
+  } catch (error) {
+    return actionError(
+      error,
+      "Failed to save the playoff qualifiers.",
+    );
+  }
+}
+
+/**
+ * Suggests each group's current top teams from the standings (same
+ * ordering the public standings use: points, then game wins). Nothing
+ * is saved - the editor loads these into the slots for the admin to
+ * review and save.
+ */
+export async function suggestQualifiersFromStandings(): Promise<
+  ActionResult<{
+    slots: {
+      groupId: string;
+      rank: number;
+      registrationId: string;
+    }[];
+  }>
+> {
+  try {
+    await requireRole(SUPER_ADMIN);
+
+    const tournament = await getCurrentTournament();
+    const control = await getTournamentControl();
+    const groups = await getQualifierGroups(tournament.id);
+
+    if (groups.length === 0) {
+      throw new Error("There are no groups yet.");
+    }
+
+    const { perGroup } = getPlayoffLayout(
+      control.playoffSize,
+      groups.length,
+    );
+
+    const standings = await prisma.standing.findMany({
+      where: {
+        tournamentGroupId: {
+          in: groups.map((group) => group.id),
+        },
+        tournamentRegistration: {
+          tournamentId: tournament.id,
+          status: "APPROVED",
+          team: {
+            deletedAt: null,
+          },
+        },
+      },
+      orderBy: [{ points: "desc" }, { gameWins: "desc" }],
+      select: {
+        tournamentGroupId: true,
+        tournamentRegistrationId: true,
+      },
+    });
+
+    const slots = groups.flatMap((group) =>
+      standings
+        .filter(
+          (standing) =>
+            standing.tournamentGroupId === group.id,
+        )
+        .slice(0, perGroup)
+        .map((standing, index) => ({
+          groupId: group.id,
+          rank: index + 1,
+          registrationId: standing.tournamentRegistrationId,
+        })),
+    );
+
+    if (slots.length === 0) {
+      throw new Error(
+        "There are no standings to suggest from yet.",
+      );
+    }
+
+    return { ok: true, slots };
+  } catch (error) {
+    return actionError(
+      error,
+      "Failed to load suggestions from the standings.",
+    );
+  }
+}
+
+/**
+ * LEGACY / unused - see savePlayoffQualifiersByGroup().
+ */
 export async function saveQualifiedTeams(
   teams: Array<{
     registrationId: string;
@@ -949,6 +1350,7 @@ export async function removeTeamFromPlayoffSlot(data: {
   });
 
   revalidatePath("/admin/playoffs");
+  revalidatePath("/standings");
   revalidatePath("/schedule");
 
   return {
@@ -1106,6 +1508,7 @@ export async function resetPlayoffResult(
   });
 
   revalidatePath("/admin/playoffs");
+  revalidatePath("/standings");
   revalidatePath("/schedule");
 
   return {
@@ -1352,6 +1755,7 @@ export async function createPlayoffBracket() {
   
 
   revalidatePath("/admin/playoffs");
+  revalidatePath("/standings");
   revalidatePath("/admin/playoffs/bracket");
 
   return {
@@ -1637,6 +2041,7 @@ export async function rebuildCurrentPlayoffBracketStructure() {
   });
 
   revalidatePath("/admin/playoffs");
+  revalidatePath("/standings");
   revalidatePath("/admin/playoffs/bracket");
   revalidatePath("/schedule");
 
